@@ -16,9 +16,11 @@ node index.mjs
 
 ## For reference, requesting a response from terminal looks like this
 
+```bash
 curl http://localhost:11434/api/chat -d '{
   "model": "mistral",
   "messages": [
     { "role": "user", "content": "why is the sky blue?" }
   ]
 }'
+```
