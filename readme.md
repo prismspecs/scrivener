@@ -24,3 +24,6 @@ curl http://localhost:11434/api/chat -d '{
   ]
 }'
 ```
+
+## Useful parameters
+stream: false
