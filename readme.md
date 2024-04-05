@@ -30,5 +30,6 @@ stream: false
 
 ## Bot setup
 + [Go to Disrord Developer Portal](https://discord.com/developers/applications)
-+ Generate a URL for the server admin on the OAUTH2 tab in developers panel
++ Generate a URL for the server admin on the OAUTH2 tab in developers panel, in our case we did not select any permissions
 + Admin should restrict access as needed
++ Get a list of users who should have access to the game (or credits, whatever)
