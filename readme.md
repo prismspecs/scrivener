@@ -27,3 +27,8 @@ curl http://localhost:11434/api/chat -d '{
 
 ## Useful parameters
 stream: false
+
+## Bot setup
++ [Go to Disrord Developer Portal](https://discord.com/developers/applications)
++ Generate a URL for the server admin on the OAUTH2 tab in developers panel
++ Admin should restrict access as needed
