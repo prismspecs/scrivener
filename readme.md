@@ -8,10 +8,25 @@ ollama pull mistral
 export OLLAMA_HOST=localhost:8888
 ```
 
+## Node setup
+
+Install node via npm
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+source ~/.bashrc
+nvm install v18.17.0
+```
+
 ## Run
 ```bash
 ollama serve
 node index.mjs
+```
+
+consider prepending with nohup and appending with & so when running the program remotely it continues if the shell is closed, eg.
+```bash
+nohup ollama serve &
+nohup node index.mjs &
 ```
 
 ## For reference, requesting a response from terminal looks like this
