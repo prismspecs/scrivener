@@ -33,3 +33,4 @@ stream: false
 + Generate a URL for the server admin on the OAUTH2 tab in developers panel, in our case we did not select any permissions
 + Admin should restrict access as needed
 + Get a list of users who should have access to the game (or credits, whatever)
++ Create a pinned message which explains the game and/or welcomes players
