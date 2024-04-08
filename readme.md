@@ -15,18 +15,36 @@ Install node via npm
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 source ~/.bashrc
 nvm install v18.17.0
+npm install
 ```
+Make sure to add the .env file which includes the bot key
 
-## Run
+## Run Local
 ```bash
+export OLLAMA_HOST=localhost:8888
 ollama serve
 node index.mjs
 ```
 
-consider prepending with nohup and appending with & so when running the program remotely it continues if the shell is closed, eg.
+(Note that you may need to run the export command for the ollama bug before serving)
+
+## Run Remote
+
 ```bash
-nohup ollama serve &
-nohup node index.mjs &
+ssh vision@192.168.0.136
+cd weird-economies
+export OLLAMA_HOST=localhost:8888
+screen
+ollama serve
+```
+CTRL+A, CTRL+D (detaches terminal)
+
+in another tab
+```bash
+ssh vision@192.168.0.136
+cd weird-economies
+screen
+node index.mjs
 ```
 
 ## For reference, requesting a response from terminal looks like this
