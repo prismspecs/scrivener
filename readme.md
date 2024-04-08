@@ -47,6 +47,8 @@ screen
 node index.mjs
 ```
 
+```screen -r``` to reattach
+
 ## For reference, requesting a response from terminal looks like this
 
 ```bash

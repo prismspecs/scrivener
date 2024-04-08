@@ -3,25 +3,24 @@ import axios from 'axios';
 import dotenv from 'dotenv'
 import { Client, GatewayIntentBits, Partials, EmbedBuilder, AttachmentBuilder } from 'discord.js';
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder } from 'discord.js';
-import { dispatchAppend, commandList, SERVER_ID, CHANNEL_ID } from './helpers.mjs';
 import { commands, setupCommands } from './commands.mjs';
 import { RateLimiter } from 'discord.js-rate-limiter';
+import config from './data/config.json';
 
 // allows 1 command every x seconds
 const rateLimiter = new RateLimiter(1, 2000);
 
 // set up bank etc
-const dataFolder = 'data';
 let balances;
 try {
-    balances = JSON.parse(fs.readFileSync(`${dataFolder}/balances.json`));
+    balances = JSON.parse(fs.readFileSync(`${config.dataFolder}/balances.json`));
 } catch (err) {
     balances = {};
 }
 // list of which Discord IDs are valid players
 let players;
 try {
-    players = JSON.parse(fs.readFileSync(`${dataFolder}/players.json`));
+    players = JSON.parse(fs.readFileSync(`${config.dataFolder}/players.json`));
 }
 catch (err) {
     players = {};
@@ -56,10 +55,10 @@ client.once('ready', () => {
     console.log('Ready!');
 
     // replace 'SERVER/GUILD_ID' and 'CHANNEL_ID' with your actual guild and channel IDs
-    const guild = client.guilds.cache.get(SERVER_ID);
+    const guild = client.guilds.cache.get(config.SERVER_ID);
     if (!guild) return console.log('Unable to find the guild.');
 
-    const channel = guild.channels.cache.get(CHANNEL_ID);
+    const channel = guild.channels.cache.get(config.CHANNEL_ID);
     if (!channel) return console.log('Unable to find the channel.');
 
     channel.send('Bot has started up!');
@@ -85,10 +84,7 @@ client.on('messageCreate', async (message) => {
 
         // log the message content noting the user, plus a new line character
         console.log(`Message from ${message.author.username}: ${message.content}\n`);
-
     }
-
-
 
     // check message !command prefix
     if (message.content.startsWith('!generate')) {
@@ -98,8 +94,10 @@ client.on('messageCreate', async (message) => {
         // send the message to the same channel
         message.channel.send('Pong.');
     }
-    else if (message.content.startsWith('!embed')) {
-        generateTestEmbed(message);
+    else if (message.content.startsWith('!dispatch')) {
+        // create a dispatch
+        generateDispatch(message);
+
     }
     else if (message.content.startsWith('!howto')) {
         const welcomeMessage = "Each player begins with digital currency for a DAO established by the four factions in order to build a new world on the principles of self-determination, environmentalism, and egalitarianism. The currency can be pledged to advance projects which respond to material conditions within the game. If your proposal wins the voting round you earn all of the pledged currency. If you lose, you lose all of the pledged currency. The accepted proposal will alter the course of the game world and thus future situations and proposals.\n\nSome helpful commands:\n\n";
@@ -137,11 +135,11 @@ client.on('messageCreate', async (message) => {
             message.channel.send(`Welcome to the game, ${username}. The DAO has allocated you 100 💰 based on your tuition.`);
 
             // save the balances to the file
-            fs.writeFileSync(`${dataFolder}/balances.json`, JSON.stringify(balances));
+            fs.writeFileSync(`${config.dataFolder}/balances.json`, JSON.stringify(balances));
 
             // save player to players.json
             players[message.author.id] = message.author.username;
-            fs.writeFileSync(`${dataFolder}/players.json`, JSON.stringify(players));
+            fs.writeFileSync(`${config.dataFolder}/players.json`, JSON.stringify(players));
 
 
         }
@@ -196,15 +194,16 @@ async function generateTextTest(message) {
     }
 }
 
-async function generateTestEmbed(message) {
+async function generateDispatch(message) {
 
-    // prompt ollama
-    const prompt = "Create a crisis that requires the player's attention. The crisis must be political in nature and take place in the near future.";
+    // read from next-dispatch,json
+    const dispatch = fs.readFileSync(`${config.dataFolder
+        }/next-dispatch.json`, 'utf8');
 
-    const response = await promptOllama(prompt, '', dispatchAppend);
+    // const response = await promptOllama(prompt, '', config.dispatchAppend);
 
-    // test making an image attachment
-    const eventImage = new AttachmentBuilder('images/test.jpg');
+    // test making an image attachment (get image from config.dataFolder/config.imageFolder/config.dispatchFolder)/dispatch.image
+    const eventImage = new AttachmentBuilder(`${config.dataFolder}/${config.imageFolder}/${config.dispatchFolder}/${config.dispatchImage}`);
 
     // alternatively use b64 buffer
     // const b64image = '';
@@ -223,10 +222,9 @@ async function generateTestEmbed(message) {
         .addFields(
             { name: 'Crisis', value: response },
         )
-        .setImage('attachment://test.jpg') // Set the image using the attachment
+        .setImage(`attachment://${eventImage}`) // set the image using the attachment
         .setTimestamp()
     // .setFooter({ text: 'Some footer text here', iconURL: 'https://i.imgur.com/AfFp7pu.png' });
-
 
     // send the embed to the channel
     message.channel.send({ embeds: [embed], files: [eventImage] });
