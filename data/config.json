@@ -1,6 +1,6 @@
 {
     "promptPrepend": "NOT IN USE",
-    "promptAppend": "NOT IN USE Your response should take place within the world of \"The Game\" which is a near-future text-based game in which players respond to political crises. It is a cross between DnD and The Game of Global Futures.",
+    "promptAppend": "Respond with fewer than 2000 characters.",
     "dispatchPrepend": "NOT IN USE",
     "dispatchAppend": "Your response should take place within the world of \"The Game\" which is a near-future text-based game in which players respond to political crises. It is a cross between DnD and The Game of Global Futures. Avoid saying things like \"In the not-so-distant future of The Game\". Limit your response to 1024 characters or fewer.",
     "SERVER_ID": "829302399851429948",
@@ -16,5 +16,10 @@
     ],
     "dataFolder": "data",
     "imageFolder": "images",
-    "dispatchFolder": "dispatches"
+    "dispatchFolder": "images/dispatches",
+    "gameIcon": "we-logo-small.png",
+    "crisisThumbnail": "dispatch-crisis-small.jpg",
+    "votingDurationHours": 24,
+    "proposalCost": 10,
+    "currency": "💰 credits"
 }

@@ -20,9 +20,10 @@ npm install
 Make sure to add the .env file which includes the bot key
 
 ## Run Local
+
 ```bash
 export OLLAMA_HOST=localhost:8888
-ollama serve
+# ollama serve  # this turns out to not be necessary if ollama is self-starting on computer as a service
 node index.mjs
 ```
 
@@ -30,6 +31,7 @@ node index.mjs
 
 ## Run Remote
 
+This is not necessary if ollama is running as a service:
 ```bash
 ssh vision@192.168.0.136
 cd weird-economies
@@ -37,7 +39,6 @@ export OLLAMA_HOST=localhost:8888
 screen
 ollama serve
 ```
-CTRL+A, CTRL+D (detaches terminal)
 
 in another tab
 ```bash
@@ -47,6 +48,7 @@ screen
 node index.mjs
 ```
 
+CTRL+A, CTRL+D (detaches terminal)
 ```screen -r``` to reattach
 
 ## For reference, requesting a response from terminal looks like this
@@ -60,8 +62,9 @@ curl http://localhost:11434/api/chat -d '{
 }'
 ```
 
-## Useful parameters
-stream: false
+## Useful parameters for ollama
+
++ stream: false (wait until entire text is returned instead of trickling it in a word at a time)
 
 ## Bot setup
 + [Go to Disrord Developer Portal](https://discord.com/developers/applications)

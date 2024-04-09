@@ -1,4 +1,4 @@
-import { SERVER_ID } from "./helpers.mjs";
+import config from './data/config.json' assert { type: 'json' };
 
 const commands = [
     {
@@ -9,7 +9,7 @@ const commands = [
 
 async function setupCommands(client) {
 
-    const guildId = SERVER_ID;
+    const guildId = config.SERVER_ID;
 
     // Define the data for the ping command
     const pingCommandData = {
