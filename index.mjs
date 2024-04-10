@@ -1,13 +1,16 @@
 import fs from 'fs';    // filesystem for JSON stuff
 import axios from 'axios';
 import dotenv from 'dotenv'
-import { Client, GatewayIntentBits, Partials, EmbedBuilder, AttachmentBuilder } from 'discord.js';
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder } from 'discord.js';
+import { Client, GatewayIntentBits, Partials, EmbedBuilder, AttachmentBuilder, ButtonStyle } from 'discord.js';
+//import { ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder } from 'discord.js';   // voting
 import { commands, setupCommands } from './commands.mjs';
-import { generateUUID, promptOllama, removeCommandPrefix } from './helpers.mjs';
+import { initiateVote, handleInteractionCreate } from './voting.mjs';
+import { generateUUID, promptOllama, removeCommandPrefix, summarize, loadFromJSON, saveToJSON } from './helpers.mjs';
 import { RateLimiter } from 'discord.js-rate-limiter';
 import config from './data/config.json' assert { type: 'json' };
 import gameState from './data/game.json' assert { type: 'json' };
+
 
 // allows 1 command every x seconds
 const rateLimiter = new RateLimiter(1, 2000);
@@ -50,6 +53,16 @@ try {
     history = {};
 }
 
+// proposals
+let proposals;
+try {
+    proposals = JSON.parse(fs.readFileSync(`${config.dataFolder}/proposals.json`));
+}
+catch (err) {
+    console.log("could not load proposals.json");
+    proposals = {};
+}
+
 // make sure to enable all required intents
 const client = new Client({
     'intents': [
@@ -63,11 +76,24 @@ const client = new Client({
     'partials': [Partials.Channel]
 });
 
+
 dotenv.config()
 
 // commands (not working atm)
 // from https://cratecode.com/info/discordjs-slash-commands
 setupCommands(client);
+
+const commandList = [
+    '!generate [text] - Generate text based on the input.',
+    '!ping - Pong!',
+    '!dispatch - Create a new dispatch.',
+    '!howto - Get information on how to play the game.',
+    '!propose [text] - Propose an idea.',
+    '!vote [duration] [title] - Create a vote.',
+    '!balance - Check your balance.',
+    '!advice - Get advice.',
+    '!add - Add yourself to the game.'
+];
 
 
 // when the client is ready
@@ -116,7 +142,10 @@ client.on('messageCreate', async (message) => {
     }
     else if (message.content.startsWith('!ping')) {
         // send the message to the same channel
-        message.channel.send('Pong.');
+        //message.channel.send('Pong.');
+        // Send an ephemeral message in a slash command reply
+        message.reply({ content: "Your anger is a gift", ephemeral: true });
+
     }
     else if (message.content.startsWith('!dispatch')) {
         // create a dispatch
@@ -126,12 +155,18 @@ client.on('messageCreate', async (message) => {
     else if (message.content.startsWith('!howto')) {
         const welcomeMessage = "Each player begins with digital currency for a DAO established by the four factions in order to build a new world on the principles of self-determination, environmentalism, and egalitarianism. The currency can be pledged to advance projects which respond to material conditions within the game. If your proposal wins the voting round you earn all of the pledged currency. If you lose, you lose all of the pledged currency. The accepted proposal will alter the course of the game world and thus future situations and proposals.\n\nSome helpful commands:\n\n";
         const commandListString = commandList.join('\n');
-        message.channel.send(`${welcomeMessage}${commandListString}\n\nGood luck!`);
+        //message.channel.send(`${welcomeMessage}${commandListString}\n\nGood luck!`);
+        message.reply({ content: `${welcomeMessage}${commandListString}\n\nGood luck!`, ephemeral: true });
 
     }
     else if (message.content.startsWith('!propose')) {
 
         propose(message);
+
+    }
+    else if (message.content.startsWith('!vote')) {
+        initiateVote(message);
+        client.on('interactionCreate', handleInteractionCreate);
 
     }
     else if (message.content.startsWith('!balance')) {
@@ -141,7 +176,7 @@ client.on('messageCreate', async (message) => {
         message.channel.send(`${username}, your balance is ${balance} ${config.currency}`);
     }
     else if (message.content.startsWith('!advice')) {
-        generatePresentation(message);
+        advice(message);
     }
     else if (message.content.startsWith('!add')) {
         // add user to the game and include them in players.json, and give them 100 credits, but only if they're not already in the game
@@ -167,12 +202,12 @@ client.on('messageCreate', async (message) => {
 
 });
 
+
 // REMOVE ...
-async function generatePresentation(message) {
+async function advice(message) {
     // post an image with caption
     const image = new AttachmentBuilder('sketches/logo-anarchists.jpg');
     message.channel.send({ files: [image], content: '**Prefigurative Anarcho-Syndicalists**: "Reject the AIs appointment and mobilize grassroots efforts to reclaim the museums as community spaces. Instead of relying on hierarchical structures, propose a cooperative model in which museums are governed by the public they represent."' });
-
 }
 
 async function propose(message) {
@@ -195,36 +230,31 @@ async function propose(message) {
         return;
     }
 
+    // load proposals from file
+    const proposals = loadFromJSON(`${config.dataFolder}/proposals.json`);
+
     // remove the prefix from the message
     let newMessage = removeCommandPrefix(message.content);
 
-    // create a variable and prepend a prefix to the message
-    newMessage = `Make sure to respond with fewer than 2000 characters to this: ${newMessage}`;
+    // add to proposals.json
+    const uuid = generateUUID(newMessage);
+    proposals[uuid] = {
+        text: newMessage,
+        proposer: message.author.id,
+        votes: 0
+    };
 
-    // check if the message is not from a bot to avoid an infinite loop
+    // save the proposals to the file
+    fs.writeFileSync(`${config.dataFolder}/proposals.json`, JSON.stringify(proposals));
 
-    try {
-        // make the HTTP request to the specified endpoint
-        const response = await axios.post('http://localhost:11434/api/chat', {
-            model: 'mistral',
-            stream: false,
-            messages: [{ role: 'user', content: newMessage }]
-        });
+    // deduct the cost from the user's balance
+    balances[message.author.id] -= config.proposalCost;
+    fs.writeFileSync(`${config.dataFolder}/balances.json`, JSON.stringify(balances));
 
-        // extract only the 'content' property from the response
-        const content = response.data.message.content;
+    // message to channel
+    let username = message.author.username;
+    message.channel.send(`${username} has proposed: ${newMessage}.`);
 
-        // send the 'content' back to the Discord channel
-        message.reply(`Model Response: ${content}`);
-
-        // deduct the proposal cost from the user's balance
-        balances[message.author.id] -= config.proposalCost;
-        fs.writeFileSync(`${config.dataFolder}/balances.json`, JSON.stringify(balances));
-
-    } catch (error) {
-        console.error('Error making HTTP request:', error.message);
-        message.reply('An error occurred while processing your request.');
-    }
 }
 
 // function to generate text
@@ -243,6 +273,8 @@ async function generateTextTest(message) {
 
             // send the content back to the Discord channel
             message.reply(`Model Response: ${response}`);
+
+            message.reply("Summary: " + await summarize(response));
 
         } catch (error) {
             console.error('Error making HTTP request:', error.message);
@@ -318,9 +350,6 @@ async function generateDispatch(message) {
     // pin message
     // message.pin();
 }
-
-
-
 
 
 client.login(process.env.DISCORD_TOKEN);
