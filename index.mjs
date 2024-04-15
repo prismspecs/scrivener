@@ -15,12 +15,12 @@ import { RateLimiter } from 'discord.js-rate-limiter';
 const rateLimiter = new RateLimiter(1, 2000);
 
 // all the game data files
+const config = loadFromJSON(`data/config.json`);
+const admins = loadFromJSON(`${config.dataFolder}/admins.json`);
 let game = loadFromJSON(`${config.dataFolder}/game.json`);
 let balances = loadFromJSON(`${config.dataFolder}/balances.json`);
 let proposals = loadFromJSON(`${config.dataFolder}/proposals.json`);
 let players = loadFromJSON(`${config.dataFolder}/players.json`);
-const config = loadFromJSON(`${config.dataFolder}/config.json`);
-const admins = loadFromJSON(`${config.dataFolder}/admins.json`);
 let history = loadFromJSON(`${config.dataFolder}/history-of-events.json`);
 
 // make sure to enable all required intents
