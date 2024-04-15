@@ -1,3 +1,5 @@
+// to do: combine players and balances
+
 import fs from 'fs';    // filesystem for JSON stuff
 import axios from 'axios';
 import dotenv from 'dotenv'
@@ -8,60 +10,18 @@ import { commands, setupCommands } from './commands.mjs';
 import { initiateVote, handleInteractionCreate } from './voting.mjs';
 import { generateUUID, promptOllama, removeCommandPrefix, summarize, loadFromJSON, saveToJSON } from './helpers.mjs';
 import { RateLimiter } from 'discord.js-rate-limiter';
-import config from './data/config.json' assert { type: 'json' };
-import gameState from './data/game.json' assert { type: 'json' };
-
 
 // allows 1 command every x seconds
 const rateLimiter = new RateLimiter(1, 2000);
 
-// game state stuff
-let game;
-try {
-    game = JSON.parse(fs.readFileSync(`${config.dataFolder}/game.json`));
-} catch (err) {
-    console.log("could not load game.json");
-    game = {};
-}
-
-// set up bank etc
-let balances;
-try {
-    balances = JSON.parse(fs.readFileSync(`${config.dataFolder}/balances.json`));
-} catch (err) {
-    console.log("could not load balances.json")
-    balances = {};
-}
-
-// list of which Discord IDs are valid players
-let players;
-try {
-    players = JSON.parse(fs.readFileSync(`${config.dataFolder}/players.json`));
-}
-catch (err) {
-    console.log("could not load players.json")
-    players = {};
-}
-
-// store everything that has happened in the game
-let history;
-try {
-    history = JSON.parse(fs.readFileSync(`${config.dataFolder
-        }/history-of-events.json`));
-} catch (err) {
-    console.log("could not load history-of-events.json");
-    history = {};
-}
-
-// proposals
-let proposals;
-try {
-    proposals = JSON.parse(fs.readFileSync(`${config.dataFolder}/proposals.json`));
-}
-catch (err) {
-    console.log("could not load proposals.json");
-    proposals = {};
-}
+// all the game data files
+let game = loadFromJSON(`${config.dataFolder}/game.json`);
+let balances = loadFromJSON(`${config.dataFolder}/balances.json`);
+let proposals = loadFromJSON(`${config.dataFolder}/proposals.json`);
+let players = loadFromJSON(`${config.dataFolder}/players.json`);
+const config = loadFromJSON(`${config.dataFolder}/config.json`);
+const admins = loadFromJSON(`${config.dataFolder}/admins.json`);
+let history = loadFromJSON(`${config.dataFolder}/history-of-events.json`);
 
 // make sure to enable all required intents
 const client = new Client({
@@ -160,11 +120,21 @@ client.on('messageCreate', async (message) => {
 
     }
     else if (message.content.startsWith('!propose')) {
+        if (game.state !== 'proposal') {
+            message.reply('Proposals are not allowed at this time. Please wait for the next dispatch.');
+            return;
+        }
 
         propose(message);
 
     }
     else if (message.content.startsWith('!vote')) {
+
+        if (game.state !== 'voting') {
+            message.reply('Voting is not allowed at this time. Please wait until the proposal period is over.');
+            return;
+        }
+
         initiateVote(message);
         client.on('interactionCreate', handleInteractionCreate);
 
@@ -198,8 +168,18 @@ client.on('messageCreate', async (message) => {
         else {
             message.author.send('You are already in the game.');
         }
-    }
+    } else if (message.content.startsWith('!admin-state')) {
+        // if user ID is in admins.json
+        if (message.author.id in admins) {
 
+            // set the game state to the message content
+            game.state = message.content.split(' ')[1];
+            saveToJSON(`${config.dataFolder}/game.json`, game);
+
+            // message to channel
+            message.channel.send(`Game state set to: ${game.state}`);
+        }
+    }
 });
 
 
@@ -211,6 +191,9 @@ async function advice(message) {
 }
 
 async function propose(message) {
+
+    // get lastDispatch from game.json
+    game = loadFromJSON(`${config.dataFolder}/game.json`);
 
     // make sure it has been less than config.votingDurationHours since the last dispatch
     if (Date.now() - game.lastDispatch > config.votingDurationHours * 60 * 60 * 1000) {
@@ -231,7 +214,7 @@ async function propose(message) {
     }
 
     // load proposals from file
-    const proposals = loadFromJSON(`${config.dataFolder}/proposals.json`);
+    proposals = loadFromJSON(`${config.dataFolder}/proposals.json`);
 
     // remove the prefix from the message
     let newMessage = removeCommandPrefix(message.content);
@@ -245,11 +228,11 @@ async function propose(message) {
     };
 
     // save the proposals to the file
-    fs.writeFileSync(`${config.dataFolder}/proposals.json`, JSON.stringify(proposals));
+    saveToJSON(`${config.dataFolder}/proposals.json`, proposals);
 
     // deduct the cost from the user's balance
     balances[message.author.id] -= config.proposalCost;
-    fs.writeFileSync(`${config.dataFolder}/balances.json`, JSON.stringify(balances));
+    saveToJSON(`${config.dataFolder}/balances.json`, balances);
 
     // message to channel
     let username = message.author.username;
@@ -286,7 +269,7 @@ async function generateTextTest(message) {
 async function generateDispatch(message) {
 
     // read from next-dispatch.json as JSON
-    let dispatch = JSON.parse(fs.readFileSync(`${config.dataFolder}/next-dispatch.json`));
+    let dispatch = loadFromJSON(`${config.dataFolder}/next-dispatch.json`);
 
     const uuid = generateUUID(dispatch.text);
 
@@ -298,7 +281,7 @@ async function generateDispatch(message) {
 
     // add the dispatch to history
     history[uuid] = dispatch;
-    fs.writeFileSync(`${config.dataFolder}/history-of-events.json`, JSON.stringify(history));
+    saveToJSON(`${config.dataFolder}/history-of-events.json`, history);
 
 
 
@@ -345,7 +328,7 @@ async function generateDispatch(message) {
 
     // set lastDispatch time to now
     game.lastDispatch = Date.now();
-    fs.writeFileSync(`${config.dataFolder}/game.json`, JSON.stringify(game));
+    saveToJSON(`${config.dataFolder}/game.json`, game);
 
     // pin message
     // message.pin();

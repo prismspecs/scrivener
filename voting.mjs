@@ -68,9 +68,11 @@ export async function handleInteractionCreate(interaction) {
     proposals[interaction.customId].voters.push(interaction.user.id);
 
     // message to channel that the user has voted
-    let username = interaction.user.username;
-    interaction.channel.send(`${username} has voted for ${proposals[interaction.customId].text}.`);
-    //await interaction.reply({ content: 'You clicked Button 2!', ephemeral: true });
+    const username = interaction.user.username;
+    const proposalText = proposals[interaction.customId].text;
+    const voteCount = proposals[interaction.customId].votes;
+
+    interaction.channel.send(`${username} has voted for ${proposalText}. Current votes for this proposal: ${voteCount}.`);    //await interaction.reply({ content: 'You clicked Button 2!', ephemeral: true });
 
     // write the updated proposals to the file
     saveToJSON(`${config.dataFolder}/proposals.json`, proposals);
