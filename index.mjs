@@ -10,6 +10,7 @@ import { commands, setupCommands } from './commands.mjs';
 import { initiateVote, handleInteractionCreate } from './voting.mjs';
 import { generateUUID, promptOllama, removeCommandPrefix, summarize, loadFromJSON, saveToJSON } from './helpers.mjs';
 import { RateLimiter } from 'discord.js-rate-limiter';
+import cron from 'node-cron';
 
 // allows 1 command every x seconds
 const rateLimiter = new RateLimiter(1, 2000);
@@ -72,6 +73,12 @@ client.once('ready', () => {
     if (!channel) return console.log('Unable to find the channel.');
 
     channel.send('Bot has started up!');
+
+    // schedule a task to run at Xpm every day
+    // format is minutes hours day month dayOfWeek
+    cron.schedule('37 20 * * *', () => {
+        client.channels.cache.get(config.CHANNEL_ID).send('cron test!');
+    });
 
 });
 
