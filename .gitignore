@@ -1,5 +1,9 @@
 .env
 
+# don't include data/ folder except for config.json
+data/*
+!data/config.json
+
 # Logs
 logs
 *.log
