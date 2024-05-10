@@ -4,7 +4,6 @@ import fs from 'fs';    // filesystem for JSON stuff
 import axios from 'axios';
 import dotenv from 'dotenv'
 import { Client, GatewayIntentBits, Partials, EmbedBuilder, AttachmentBuilder, ButtonStyle } from 'discord.js';
-//import { ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder } from 'discord.js';
 import { ActionRowBuilder, ButtonBuilder } from 'discord.js';   // voting
 import { commands, setupCommands } from './commands.mjs';
 import { initiateVote, handleInteractionCreate } from './voting.mjs';
@@ -23,6 +22,7 @@ let balances = loadFromJSON(`${config.dataFolder}/balances.json`);
 let proposals = loadFromJSON(`${config.dataFolder}/proposals.json`);
 let players = loadFromJSON(`${config.dataFolder}/players.json`);
 let history = loadFromJSON(`${config.dataFolder}/history-of-events.json`);
+const factions = loadFromJSON(`${config.dataFolder}/factions.json`);
 
 // make sure to enable all required intents
 const client = new Client({
@@ -37,7 +37,6 @@ const client = new Client({
     'partials': [Partials.Channel]
 });
 
-
 dotenv.config()
 
 // commands (not working atm)
@@ -45,15 +44,12 @@ dotenv.config()
 setupCommands(client);
 
 const commandList = [
-    '!generate [text] - Generate text based on the input.',
-    '!ping - Pong!',
-    '!dispatch - Create a new dispatch.',
     '!howto - Get information on how to play the game.',
-    '!propose [text] - Propose an idea.',
+    '!join - Join the game manually.',
+    '!info - Check your credits and other information.',
+    '!propose [your proposal] - Propose an idea.',
     '!vote [duration] [title] - Create a vote.',
-    '!balance - Check your balance.',
-    '!advice - Get advice.',
-    '!add - Add yourself to the game.'
+    '!advice - Get advice.'
 ];
 
 
@@ -72,7 +68,7 @@ client.once('ready', () => {
     const channel = guild.channels.cache.get(config.CHANNEL_ID);
     if (!channel) return console.log('Unable to find the channel.');
 
-    channel.send('Bot has started up!');
+    channel.send('Scrivener is now online.');
 
     // schedule a task to run at Xpm every day
     // format is minutes hours day month dayOfWeek
@@ -88,6 +84,7 @@ process.on('uncaughtException', (err) => {
     console.log(err);
 });
 
+// handle messages/commands
 client.on('messageCreate', async (message) => {
 
     // if message begins with "!"
@@ -100,25 +97,14 @@ client.on('messageCreate', async (message) => {
         }
 
         // log the message content noting the user, plus a new line character
-        console.log(`Message from ${message.author.username}: ${message.content}\n`);
+        console.log(`Message from ${message.member.displayName}: ${message.content}\n`);
     }
 
     // check message !command prefix
     if (message.content.startsWith('!generate')) {
-        generateTextTest(message);
+        // generateTextTest(message);
     }
-    else if (message.content.startsWith('!ping')) {
-        // send the message to the same channel
-        //message.channel.send('Pong.');
-        // Send an ephemeral message in a slash command reply
-        message.reply({ content: "Your anger is a gift", ephemeral: true });
 
-    }
-    else if (message.content.startsWith('!dispatch')) {
-        // create a dispatch
-        generateDispatch(message);
-
-    }
     else if (message.content.startsWith('!howto')) {
         const welcomeMessage = "Each player begins with digital currency for a DAO established by the four factions in order to build a new world on the principles of self-determination, environmentalism, and egalitarianism. The currency can be pledged to advance projects which respond to material conditions within the game. If your proposal wins the voting round you earn all of the pledged currency. If you lose, you lose all of the pledged currency. The accepted proposal will alter the course of the game world and thus future situations and proposals.\n\nSome helpful commands:\n\n";
         const commandListString = commandList.join('\n');
@@ -126,6 +112,13 @@ client.on('messageCreate', async (message) => {
         message.reply({ content: `${welcomeMessage}${commandListString}\n\nGood luck!`, ephemeral: true });
 
     }
+
+    else if (message.content.startsWith('!dispatch')) {
+        // create a dispatch
+        generateDispatch(message);
+
+    }
+
     else if (message.content.startsWith('!propose')) {
         if (game.state !== 'proposal') {
             message.reply('Proposals are not allowed at this time. Please wait for the next dispatch.');
@@ -146,35 +139,37 @@ client.on('messageCreate', async (message) => {
         client.on('interactionCreate', handleInteractionCreate);
 
     }
-    else if (message.content.startsWith('!balance')) {
+    else if (message.content.startsWith('!info')) {
         // check the balance of the user in the balances.json file and send to server
-        let username = message.author.username;
+        let username = message.member.displayName;
         let balance = balances[message.author.id];
-        message.channel.send(`${username}, your balance is ${balance} ${config.currency}`);
+        let myFaction = players.find(player => player.discordId === message.author.id).faction;
+        message.channel.send(`${username}, you have ${balance} ${config.currency}. You are a member of the ${myFaction} faction.`);
     }
     else if (message.content.startsWith('!advice')) {
         advice(message);
     }
-    else if (message.content.startsWith('!add')) {
+    else if (message.content.startsWith('!join')) {
+        sendWelcomeMessage(message);
         // add user to the game and include them in players.json, and give them 100 credits, but only if they're not already in the game
-        if (!(message.author.id in balances)) {
-            balances[message.author.id] = 100;
+        // if (!(message.author.id in balances)) {
+        //     balances[message.author.id] = 100;
 
-            // message to channel welcoming player
-            let username = message.author.username;
-            message.channel.send(`Welcome to the game, ${username}. The DAO has allocated you 100 ${config.currency} based on your tuition.`);
+        //     // message to channel welcoming player
+        //     let username = message.member.displayName;
+        //     message.channel.send(`Welcome to the game, ${username}. The DAO has allocated you 100 ${config.currency} based on your tuition.`);
 
-            // save the balances to the file
-            fs.writeFileSync(`${config.dataFolder}/balances.json`, JSON.stringify(balances));
+        //     // save the balances to the file
+        //     fs.writeFileSync(`${config.dataFolder}/balances.json`, JSON.stringify(balances));
 
-            // save player to players.json
-            players[message.author.id] = message.author.username;
-            fs.writeFileSync(`${config.dataFolder}/players.json`, JSON.stringify(players));
+        //     // save player to players.json
+        //     players[message.author.id] = message.member.displayName;
+        //     fs.writeFileSync(`${config.dataFolder}/players.json`, JSON.stringify(players));
 
-        }
-        else {
-            message.author.send('You are already in the game.');
-        }
+        // }
+        // else {
+        //     message.author.send('You are already in the game.');
+        // }
     } else if (message.content.startsWith('!admin-state')) {
         // if user ID is in admins.json
         if (message.author.id in admins) {
@@ -188,6 +183,66 @@ client.on('messageCreate', async (message) => {
         }
     }
 });
+
+
+// welcome message
+function sendWelcomeMessage(message) {
+
+    // check to see if player is already in the game
+    if (players.find(player => player.discordId === message.author.id)) {
+        message.reply('You are already in the game.');
+        return;
+    }
+
+    const member = message.member;
+
+    const welcomeMessage = `Welcome to ${config.gameName}, ${member.displayName}!\n\n` +
+        `You can read more about how to play in the #scrivener-rulebook channel. You have been selected as a member of the ${config.groupName}, the last bastion of the Left in the year ${config.gameYear}. You must work together through debate and cooperation to spend our pooled resources in order to respond to crises and opportunities. At any time you may type !help to get some basic instructions and a list of available actions you may take. You have been given ${config.startingBalance} ${config.currency} as a valued comrade in our quest author a new future beyond the shadow of illiberalism.\n\n` +
+        `Please select a faction to join below. You can read more about them at <#${config.RULEBOOK_ID}> or by typing !factions\n\nChoose your faction:`;
+
+    // create button for each faction
+    const buttons = factions.map((faction) => {
+        return new ButtonBuilder()
+            .setStyle(ButtonStyle.Primary)
+            .setLabel(faction.name)
+            .setCustomId(faction.name.toLowerCase());
+    });
+
+    const row = new ActionRowBuilder().addComponents(...buttons);
+
+    message.reply({ content: welcomeMessage, components: [row], ephemeral: true });
+
+    // listen for interaction events
+    const filter = (interaction) => interaction.isButton() && interaction.user.id === message.author.id;
+    const collector = message.channel.createMessageComponentCollector({ filter, time: 60000 }); // Adjust time as needed
+
+    collector.on('collect', async (interaction) => {
+        const factionName = interaction.customId;
+        const player = {
+            displayName: member.displayName,
+            discordId: member.id,
+            balance: config.startingBalance,
+            faction: factionName
+        };
+        // Add player to players array
+        players.push(player);
+        // Save players array to players.json using saveToJSON
+        saveToJSON(`${config.dataFolder}/players.json`, players);
+
+        await interaction.reply(`You have joined the ${factionName} faction!`);
+    });
+
+    collector.on('end', collected => {
+        // Check if no interactions were collected
+        if (collected.size === 0) {
+            message.channel.send('Time ran out and no faction was selected. Please use !join to try again.');
+        } else {
+            // Edit the interaction to remove the components
+            collected.first().reply({ content: 'Faction selection ended.', ephemeral: true });
+        }
+    });
+
+}
 
 
 // REMOVE ...
@@ -242,7 +297,7 @@ async function propose(message) {
     saveToJSON(`${config.dataFolder}/balances.json`, balances);
 
     // message to channel
-    let username = message.author.username;
+    let username = message.member.displayName;
     message.channel.send(`${username} has proposed: ${newMessage}.`);
 
 }

@@ -1,4 +1,7 @@
 {
+    "gameName": "Scrivener",
+    "groupName": "Sciveners",
+    "gameYear": "2050",
     "promptPrepend": "NOT IN USE",
     "promptAppend": "Respond with fewer than 2000 characters.",
     "dispatchPrepend": "NOT IN USE",
@@ -6,6 +9,7 @@
     "SERVER_ID": "829302399851429948",
     "CHANNEL_ID": "1225696379993849886",
     "CLIENT_ID": "1214973351198597140",
+    "RULEBOOK_ID": "1237735048313049128",
     "commandList": [
         "!help - get help (not working)",
         "!add - add yourself to the game",
@@ -21,5 +25,6 @@
     "crisisThumbnail": "dispatch-crisis-small.jpg",
     "votingDurationHours": 24,
     "proposalCost": 10,
-    "currency": "💰 credits"
+    "startingBalance": 100,
+    "currency": "🪙"
 }
