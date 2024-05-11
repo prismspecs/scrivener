@@ -1,13 +1,12 @@
-// to do: combine players and balances
-
 import fs from 'fs';    // filesystem for JSON stuff
 import axios from 'axios';
 import dotenv from 'dotenv'
 import { Client, GatewayIntentBits, Partials, EmbedBuilder, AttachmentBuilder, ButtonStyle } from 'discord.js';
 import { ActionRowBuilder, ButtonBuilder } from 'discord.js';   // voting
+import { Poll, PollLayoutType } from 'discord.js';  // voting (official poll)
 import { commands, setupCommands } from './commands.mjs';
 import { initiateVote, handleInteractionCreate } from './voting.mjs';
-import { generateUUID, promptOllama, removeCommandPrefix, summarize, loadFromJSON, saveToJSON } from './helpers.mjs';
+import { generateUUID, showFactions, promptOllama, removeCommandPrefix, summarize, loadFromJSON, saveToJSON } from './helpers.mjs';
 import { RateLimiter } from 'discord.js-rate-limiter';
 import cron from 'node-cron';
 
@@ -16,9 +15,7 @@ const rateLimiter = new RateLimiter(1, 2000);
 
 // all the game data files
 const config = loadFromJSON(`data/config.json`);
-const admins = loadFromJSON(`${config.dataFolder}/admins.json`);
 let game = loadFromJSON(`${config.dataFolder}/game.json`);
-let balances = loadFromJSON(`${config.dataFolder}/balances.json`);
 let proposals = loadFromJSON(`${config.dataFolder}/proposals.json`);
 let players = loadFromJSON(`${config.dataFolder}/players.json`);
 let history = loadFromJSON(`${config.dataFolder}/history-of-events.json`);
@@ -34,7 +31,7 @@ const client = new Client({
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
     ],
-    'partials': [Partials.Channel]
+    'partials': [Partials.Channel, Partials.Message]
 });
 
 dotenv.config()
@@ -47,6 +44,7 @@ const commandList = [
     '!howto - Get information on how to play the game.',
     '!join - Join the game manually.',
     '!info - Check your credits and other information.',
+    '!factions - Get information on the political factions.',
     '!propose [your proposal] - Propose an idea.',
     '!vote [duration] [title] - Create a vote.',
     '!advice - Get advice.'
@@ -87,106 +85,119 @@ process.on('uncaughtException', (err) => {
 // handle messages/commands
 client.on('messageCreate', async (message) => {
 
-    // if message begins with "!"
-    if (message.content.startsWith('!')) {
+    // DM commands to bot
+    if (!message.guild) {
+        // if the DM is not from the bot itself
+        if (message.author.id !== client.user.id) {
+            console.log("DM received: ", message.content);
+        }
+        if (isPlayerAdmin(message.author.id)) {
+            // if it starts with !admin
+            if (message.content.startsWith('!admin')) {
+                adminCommand(message);
+            }
+        }
+    } else {
 
-        // check rate limit and return if the user is sending messages too quickly
-        if (rateLimiter.take(message.author.id)) {
-            message.reply('You are sending messages too quickly.');
-            return;
+        // if message begins with "!"
+        if (message.content.startsWith('!')) {
+
+            // check rate limit and return if the user is sending messages too quickly
+            if (rateLimiter.take(message.author.id)) {
+                message.reply('You are sending messages too quickly.');
+                return;
+            }
+
+            // log the message content noting the user, plus a new line character
+            console.log(`Message from ${message.member.displayName}: ${message.content}\n`);
         }
 
-        // log the message content noting the user, plus a new line character
-        console.log(`Message from ${message.member.displayName}: ${message.content}\n`);
-    }
-
-    // check message !command prefix
-    if (message.content.startsWith('!generate')) {
-        // generateTextTest(message);
-    }
-
-    else if (message.content.startsWith('!howto')) {
-        const welcomeMessage = "Each player begins with digital currency for a DAO established by the four factions in order to build a new world on the principles of self-determination, environmentalism, and egalitarianism. The currency can be pledged to advance projects which respond to material conditions within the game. If your proposal wins the voting round you earn all of the pledged currency. If you lose, you lose all of the pledged currency. The accepted proposal will alter the course of the game world and thus future situations and proposals.\n\nSome helpful commands:\n\n";
-        const commandListString = commandList.join('\n');
-        //message.channel.send(`${welcomeMessage}${commandListString}\n\nGood luck!`);
-        message.reply({ content: `${welcomeMessage}${commandListString}\n\nGood luck!`, ephemeral: true });
-
-    }
-
-    else if (message.content.startsWith('!dispatch')) {
-        // create a dispatch
-        generateDispatch(message);
-
-    }
-
-    else if (message.content.startsWith('!propose')) {
-        if (game.state !== 'proposal') {
-            message.reply('Proposals are not allowed at this time. Please wait for the next dispatch.');
-            return;
+        // check message !command prefix
+        if (message.content.startsWith('!generate')) {
+            // generateTextTest(message);
         }
 
-        propose(message);
-
-    }
-    else if (message.content.startsWith('!vote')) {
-
-        if (game.state !== 'voting') {
-            message.reply('Voting is not allowed at this time. Please wait until the proposal period is over.');
-            return;
+        else if (message.content.startsWith('!howto')) {
+            const welcomeMessage = "Each player begins with digital currency for a DAO established by the four factions in order to build a new world on the principles of self-determination, environmentalism, and egalitarianism. The currency can be pledged to advance projects which respond to material conditions within the game. If your proposal wins the voting round you earn all of the pledged currency. If you lose, you lose all of the pledged currency. The accepted proposal will alter the course of the game world and thus future situations and proposals.\n\nSome helpful commands:\n\n";
+            const commandListString = commandList.join('\n');
+            //message.channel.send(`${welcomeMessage}${commandListString}\n\nGood luck!`);
+            message.reply({ content: `${welcomeMessage}${commandListString}\n\nGood luck!`, ephemeral: true });
         }
 
-        initiateVote(message);
-        client.on('interactionCreate', handleInteractionCreate);
+        else if (message.content.startsWith('!factions')) {
+            showFactions(message, config);
+        }
 
-    }
-    else if (message.content.startsWith('!info')) {
-        // check the balance of the user in the balances.json file and send to server
-        let username = message.member.displayName;
-        let balance = balances[message.author.id];
-        let myFaction = players.find(player => player.discordId === message.author.id).faction;
-        message.channel.send(`${username}, you have ${balance} ${config.currency}. You are a member of the ${myFaction} faction.`);
-    }
-    else if (message.content.startsWith('!advice')) {
-        advice(message);
-    }
-    else if (message.content.startsWith('!join')) {
-        sendWelcomeMessage(message);
-        // add user to the game and include them in players.json, and give them 100 credits, but only if they're not already in the game
-        // if (!(message.author.id in balances)) {
-        //     balances[message.author.id] = 100;
+        else if (message.content.startsWith('!dispatch')) {
+            // create a dispatch
+            generateDispatch(message);
 
-        //     // message to channel welcoming player
-        //     let username = message.member.displayName;
-        //     message.channel.send(`Welcome to the game, ${username}. The DAO has allocated you 100 ${config.currency} based on your tuition.`);
+        }
+        else if (message.content.startsWith('!propose')) {
+            if (game.state !== 'proposal') {
+                message.reply('Proposals are not allowed at this time. Please wait for the next dispatch.');
+                return;
+            }
 
-        //     // save the balances to the file
-        //     fs.writeFileSync(`${config.dataFolder}/balances.json`, JSON.stringify(balances));
+            propose(message);
 
-        //     // save player to players.json
-        //     players[message.author.id] = message.member.displayName;
-        //     fs.writeFileSync(`${config.dataFolder}/players.json`, JSON.stringify(players));
+        }
+        else if (message.content.startsWith('!vote')) {
 
-        // }
-        // else {
-        //     message.author.send('You are already in the game.');
-        // }
-    } else if (message.content.startsWith('!admin-state')) {
-        // if user ID is in admins.json
-        if (message.author.id in admins) {
+            if (game.state !== 'voting') {
+                message.reply('Voting is not allowed at this time. Please wait until the proposal period is over.');
+                return;
+            }
 
-            // set the game state to the message content
-            game.state = message.content.split(' ')[1];
-            saveToJSON(`${config.dataFolder}/game.json`, game);
+            initiateVote(message);
+            client.on('interactionCreate', handleInteractionCreate);
 
-            // message to channel
-            message.channel.send(`Game state set to: ${game.state}`);
+        }
+        else if (message.content.startsWith('!info')) {
+            let username = message.member.displayName;
+            // get balance from players array
+            let myBalance = players.find(player => player.discordId === message.author.id).balance;
+            let myFaction = players.find(player => player.discordId === message.author.id).faction;
+            // reply with balance and faction
+            message.reply(`${username}, you have ${myBalance} ${config.currency}. You are a member of the ${myFaction} faction.`);
+        }
+        else if (message.content.startsWith('!advice')) {
+            advice(message);
+        }
+        else if (message.content.startsWith('!join')) {
+            joinGame(message);
+            // add user to the game and include them in players.json, and give them 100 credits, but only if they're not already in the game
+            // if (!(message.author.id in balances)) {
+            //     balances[message.author.id] = 100;
+
+            //     // message to channel welcoming player
+            //     let username = message.member.displayName;
+            //     message.channel.send(`Welcome to the game, ${username}. The DAO has allocated you 100 ${config.currency} based on your tuition.`);
+
+            //     // save the balances to the file
+            //     fs.writeFileSync(`${config.dataFolder}/balances.json`, JSON.stringify(balances));
+
+            //     // save player to players.json
+            //     players[message.author.id] = message.member.displayName;
+            //     fs.writeFileSync(`${config.dataFolder}/players.json`, JSON.stringify(players));
+
+            // }
+            // else {
+            //     message.author.send('You are already in the game.');
+            // }
+        } else if (message.content.startsWith('!admin')) {
+            if (isPlayerAdmin(message.author.id)) {
+                adminCommand(message);
+            }
         }
     }
 });
 
 
-// welcome message
-function sendWelcomeMessage(message) {
+// function to join the game
+function joinGame(message) {
+
+    players = loadFromJSON(`${config.dataFolder}/players.json`);
 
     // check to see if player is already in the game
     if (players.find(player => player.discordId === message.author.id)) {
@@ -196,7 +207,7 @@ function sendWelcomeMessage(message) {
 
     const member = message.member;
 
-    const welcomeMessage = `Welcome to ${config.gameName}, ${member.displayName}!\n\n` +
+    const joinMessage = `Welcome to ${config.gameName}, ${member.displayName}!\n\n` +
         `You can read more about how to play in the #scrivener-rulebook channel. You have been selected as a member of the ${config.groupName}, the last bastion of the Left in the year ${config.gameYear}. You must work together through debate and cooperation to spend our pooled resources in order to respond to crises and opportunities. At any time you may type !help to get some basic instructions and a list of available actions you may take. You have been given ${config.startingBalance} ${config.currency} as a valued comrade in our quest author a new future beyond the shadow of illiberalism.\n\n` +
         `Please select a faction to join below. You can read more about them at <#${config.RULEBOOK_ID}> or by typing !factions\n\nChoose your faction:`;
 
@@ -205,12 +216,12 @@ function sendWelcomeMessage(message) {
         return new ButtonBuilder()
             .setStyle(ButtonStyle.Primary)
             .setLabel(faction.name)
-            .setCustomId(faction.name.toLowerCase());
+            .setCustomId(faction.name);
     });
 
     const row = new ActionRowBuilder().addComponents(...buttons);
 
-    message.reply({ content: welcomeMessage, components: [row], ephemeral: true });
+    message.reply({ content: joinMessage, components: [row], ephemeral: true });
 
     // listen for interaction events
     const filter = (interaction) => interaction.isButton() && interaction.user.id === message.author.id;
@@ -229,7 +240,12 @@ function sendWelcomeMessage(message) {
         // Save players array to players.json using saveToJSON
         saveToJSON(`${config.dataFolder}/players.json`, players);
 
-        await interaction.reply(`You have joined the ${factionName} faction!`);
+        await interaction.reply(`${member.displayName} has joined the ${factionName} faction!`);
+
+        const guild = client.guilds.cache.get(config.SERVER_ID);
+
+        const role = guild.roles.cache.find(role => role.name === factionName);
+        await member.roles.add(role);
     });
 
     collector.on('end', collected => {
@@ -394,6 +410,72 @@ async function generateDispatch(message) {
 
     // pin message
     // message.pin();
+}
+
+function isPlayerAdmin(discordId) {
+    const player = players.find(p => p.discordId === discordId);
+    return player && player.admin;
+}
+
+function adminCommand(message) {
+
+    console.log('Admin command received: ', message.content.split(' ')[1]);
+
+    const command = message.content.split(' ')[1];
+
+    switch (command) {
+        case 'proposal':
+            changeState('proposal');
+            break;
+        case 'voting':
+            changeState('voting');
+            break;
+        case 'endvote':
+            changeState('results');
+            break;
+        case 'echo':
+            // send message to the main channel of everything after !admin echo
+            const echoMessage = message.content.split(' ').slice(2).join(' ');
+            client.channels.cache.get(config.CHANNEL_ID).send(echoMessage);
+            break;
+        case 'embedecho':
+            // send message to the main channel of everything after !admin echo
+            const embedMessage = message.content.split(' ').slice(2).join(' ');
+            const embed = new EmbedBuilder()
+                .setColor(0xFF0000)
+                .setTitle(`${config.gameName} Broadcast`)
+                .setDescription(embedMessage);
+            client.channels.cache.get(config.CHANNEL_ID).send({ embeds: [embed] });
+            break;
+        default:
+            message.reply('Invalid admin command.');
+    }
+
+    // set the game state to the message content
+    // game.state = message.content.split(' ')[1];
+
+    // message to channel
+    // message.channel.send(`Game state set to: ${game.state}`);
+    // DM the user
+
+}
+
+function changeState(newState) {
+    game.state = newState;
+    saveToJSON(`${config.dataFolder}/game.json`, game);
+
+    // announce to channel as an embed with image
+    const image = new AttachmentBuilder(`${config.imageFolder}/${newState}.jpg`).setName("state.jpg");
+
+    const description = config.stateTexts[newState];
+
+    const embed = new EmbedBuilder()
+        .setTitle(newState.toUpperCase())
+        .setDescription(description)
+        .setImage("attachment://state.jpg")
+        .setColor(0xFF00FF);
+
+    client.channels.cache.get(config.CHANNEL_ID).send({ embeds: [embed], files: [image] });
 }
 
 

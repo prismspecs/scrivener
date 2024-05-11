@@ -31,7 +31,15 @@ export async function initiateVote(message) {
         rows.push(row);
     }
 
-    await message.channel.send({ content: 'Please select an option:', components: rows });
+    // message channel the votes for each proposal at the moment
+    let voteSummary = 'Current votes for each proposal:\n';
+    for (let proposal in proposals) {
+        voteSummary += `**${proposals[proposal].text}**: ${proposals[proposal].votes}\n`;
+    }
+    // send it ephemeral as a reply to user
+    message.reply({ content: voteSummary, ephemeral: true });
+
+    await message.reply({ content: 'Please vote for a proposal:', components: rows, ephemeral: true });
 }
 export async function handleInteractionCreate(interaction) {
 

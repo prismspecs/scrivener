@@ -1,4 +1,5 @@
 import { v5 as uuidv5 } from 'uuid';
+import { EmbedBuilder, AttachmentBuilder } from 'discord.js';
 import axios from 'axios';
 import fs from 'fs';
 
@@ -32,6 +33,51 @@ export async function promptOllama(prompt, prepend, append) {
 
         return null;
     }
+
+}
+
+
+export async function showFactions(message, config) {
+
+    const theFactions = loadFromJSON('data/factions.json');
+
+    // for each faction
+    for (const faction of theFactions) {
+        const factionImage = new AttachmentBuilder(`${config.imageFolder}/factions/${faction.image}`).setName("faction.jpg");
+
+        // create an embed with the faction's name and description and image
+        const embed = new EmbedBuilder()
+            .setTitle(faction.name)
+            .setDescription(faction.description)
+            .setImage("attachment://faction.jpg")
+            .setColor(faction.color || 0xFFFF00);
+
+        // send the embed to the channel
+        //message.channel.send({ embeds: [embed], files: [factionImage], ephemeral: true });
+        // send it as a DM to the user
+        message.author.send({ embeds: [embed], files: [factionImage] });
+
+    }
+
+    // send ephemeral message to the channel
+    message.reply({ content: "I've send information on the factions to your DMs.", ephemeral: true });
+
+    // send it as regular messages to the channel instead of embeds, but use images
+    // const theFactions = loadFromJSON('data/factions.json');
+
+    // // for each faction
+    // for (const faction of theFactions) {
+    //     const factionImagePath = `${config.imageFolder}/factions/${faction.image}`;
+    //     if (!fs.existsSync(factionImagePath)) {
+    //         console.error(`Image file not found: ${factionImagePath}`);
+    //         continue;
+    //     }
+
+    //     const factionImage = new AttachmentBuilder(factionImagePath).setName(`${faction.name}.jpg`);
+
+    //     // send the faction's name and description as a regular message
+    //     message.channel.send({ content: `**${faction.name}**\n${faction.description}`, files: [factionImage] });
+    // }
 
 }
 

@@ -11,97 +11,133 @@
             line-height: 1.6;
             margin: 0;
             padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            max-width: 800px;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            margin: 20px;
         }
 
         h1 {
             text-align: center;
-            margin-top: 50px;
+            margin-top: 0;
         }
 
         p {
-            margin: 20px;
+            margin: 20px 0;
         }
 
         ul {
-            margin: 20px;
+            margin: 20px 0;
             padding-left: 20px;
         }
 
         li {
             margin-bottom: 10px;
         }
+
+        @media (max-width: 800px) {
+            .container {
+                margin: 20px;
+            }
+        }
     </style>
 </head>
 
 <body>
-    <h1>Scrivener</h1>
-    <p> Overview: Scrivener is a text-based game that takes place on Discord, drawing inspiration from Dungeons &
-        Dragons (DnD), Decentralized Autonomous Organizations (DAOs), and utilizing an AI-assisted storyteller to create
-        an expansive future-building game. The game is set in a near-future world where illiberalism has gained a strong
-        foothold, and the last bastions of the left have united to form a DAO to challenge the new world order. Players
-        from various leftist factions must collaborate to propose and build a new world, responding to crises and
-        engaging in prefigurative actions. Players can also propose to change the rules of the game as it progresses.
-    </p>
-    <p> The primary goal of Scrivener is to create an engaging and immersive game that encourages participatory
-        governance, collaboration, and future-building. By drawing inspiration from various sources and utilizing an AI
-        storyteller, the game aims to provide a unique and dynamic experience that fosters critical thinking and
-        creative problem-solving. </p>
-    <h2>Getting Started</h2>
-    <ul>
-        <li>Join the <a href="https://discord.gg/example">Scrivener Discord server</a> and navigate to the
-            #scrivener-rulebook channel to read the game overview and instructions.</li>
-        <li>When you join the channel you should be prompted to choose a faction. If you miss that message, simply type
-            !join to begin. Factions are as follows: Forever Marxists, Progressive Deep State, Anarcho-Syndicalists,
-            Beyond-Us Monadists, or Postcapitalist Eschatologists.</li>
-        <li>Each player starts with the same number of credits, which can be used to propose and vote on projects within
-            the game. Successful proposals will earn the proposing player more credits for future proposals and
-            projects. Certain projects may also require that players chip in.</li>
-        <li>Twice per week, players will be presented with dispatches, which can be crises or opportunities, to which
-            they must respond.</li>
-        <li>Players can propose actions in response to dispatches by spending a portion of their currency. Other players
-            can then vote on these proposals, with the winning proposal being implemented in the game, therefore
-            altering the course of the speculative narrative.</li>
-    </ul>
-    <h2>Gameplay</h2>
-    <ul>
-        <li>Collaborate with other players to respond to dispatches and build a new world.</li>
-        <li>Use your unique perspective to propose actions and solutions. Factions will provide advice throughout the
-            game through the use of an AI-assisted storyteller.</li>
-        <li>Spend your credits wisely to propose and vote on projects that dethrone the powers that be and create space
-            for a new imaginary and material reality.</li>
-        <li>Be prepared for unexpected crises and opportunities that may arise.</li>
-        <li>Chat with other players! This is a game about collective decision making and co-authorship.</li>
-    </ul>
-    <h2>Tips</h2>
-    <ul>
-        <li>Stay up to date with new dispatches and game updates by checking the #scrivener-rulebook channel regularly.
-        </li>
-        <li>Use the AI storyteller to make inquiries and gather information about the game world.</li>
-        <li>Collaborate with players from other factions to build a diverse and resilient movement.</li>
-        <li>Be creative and open-minded when proposing solutions and responding to dispatches.</li>
-        <li>Use your credits strategically to maximize your impact in the game.</li>
-    </ul>
-    <h2>FAQs</h2>
-    <ul>
-        <li><strong>Q:</strong> How do I join a faction?</li>
-        <li><strong>A:</strong> Navigate to the #scrivener-rulebook channel to read more about each faction. Type !join
-            in the #scrivener channel when you’re ready.</li>
-        <li><strong>Q:</strong> How do I propose an action in response to a dispatch?</li>
-        <li><strong>A:</strong> Spend a portion of your currency to propose an action, which other players can then vote
-            on.</li>
-        <li><strong>Q:</strong> How do I vote on a proposal?</li>
-        <li><strong>A:</strong> Use your credits to vote on proposals that align with your faction's goals.</li>
-        <li><strong>Q:</strong> How do I check my balance of credits?</li>
-        <li><strong>A:</strong> Use the command !balance to check your balance of credits.</li>
-        <li><strong>Q:</strong> How do I get more credits?</li>
-        <li><strong>A:</strong> Credits are awarded based on participation and successful proposals.</li>
-        <li><strong>Q:</strong> Can I switch factions during the game?</li>
-        <li><strong>A:</strong> No, players must choose a faction at the beginning of the game and cannot switch
-            factions.</li>
-        <li><strong>Q:</strong> How long does the game last?</li>
-        <li><strong>A:</strong> The game lasts for a predetermined amount of time, with specific timings agreed upon by
-            the players.</li>
-    </ul>
+    <div class="container">
+        <h1>Scrivener</h1>
+        <p> Overview: Scrivener is a text-based game that takes place on Discord, drawing inspiration from Dungeons &
+            Dragons (DnD), Decentralized Autonomous Organizations (DAOs), and utilizing an AI-assisted storyteller to
+            create
+            an expansive future-building game. The game is set in a near-future world where illiberalism has gained a
+            strong
+            foothold, and the last bastions of the left have united to form a DAO to challenge the new world order.
+            Players
+            from various leftist factions must collaborate to propose and build a new world, responding to crises and
+            engaging in prefigurative actions. Players can also propose to change the rules of the game as it
+            progresses.
+        </p>
+        <p> The primary goal of Scrivener is to create an engaging and immersive game that encourages participatory
+            governance, collaboration, and future-building. By drawing inspiration from various sources and utilizing an
+            AI
+            storyteller, the game aims to provide a unique and dynamic experience that fosters critical thinking and
+            creative problem-solving. </p>
+        <h2>Getting Started</h2>
+        <ul>
+            <li>Join the <a href="https://discord.gg/example">Scrivener Discord server</a> and navigate to the
+                #scrivener-rulebook channel to read the game overview and instructions.</li>
+            <li>When you join the channel you should be prompted to choose a faction. If you miss that message, simply
+                type
+                !join to begin. Factions are as follows: Forever Marxists, Progressive Deep State, Anarcho-Syndicalists,
+                Beyond-Us Monadists, or Postcapitalist Eschatologists.</li>
+            <li>Each player starts with the same number of credits, which can be used to propose and vote on projects
+                within
+                the game. Successful proposals will earn the proposing player more credits for future proposals and
+                projects. Certain projects may also require that players chip in.</li>
+            <li>Twice per week, players will be presented with dispatches, which can be crises or opportunities, to
+                which
+                they must respond.</li>
+            <li>Players can propose actions in response to dispatches by spending a portion of their currency. Other
+                players
+                can then vote on these proposals, with the winning proposal being implemented in the game, therefore
+                altering the course of the speculative narrative.</li>
+        </ul>
+        <h2>Gameplay</h2>
+        <ul>
+            <li>Collaborate with other players to respond to dispatches and build a new world.</li>
+            <li>Use your unique perspective to propose actions and solutions. Factions will provide advice throughout
+                the
+                game through the use of an AI-assisted storyteller.</li>
+            <li>Spend your credits wisely to propose and vote on projects that dethrone the powers that be and create
+                space
+                for a new imaginary and material reality.</li>
+            <li>Be prepared for unexpected crises and opportunities that may arise.</li>
+            <li>Chat with other players! This is a game about collective decision making and co-authorship.</li>
+        </ul>
+        <h2>Tips</h2>
+        <ul>
+            <li>Stay up to date with new dispatches and game updates by checking the #scrivener-rulebook channel
+                regularly.
+            </li>
+            <li>Use the AI storyteller to make inquiries and gather information about the game world.</li>
+            <li>Collaborate with players from other factions to build a diverse and resilient movement.</li>
+            <li>Be creative and open-minded when proposing solutions and responding to dispatches.</li>
+            <li>Use your credits strategically to maximize your impact in the game.</li>
+        </ul>
+        <h2>FAQs</h2>
+        <ul>
+            <li><strong>Q:</strong> How do I join a faction?</li>
+            <li><strong>A:</strong> Navigate to the #scrivener-rulebook channel to read more about each faction. Type
+                !join
+                in the #scrivener channel when you’re ready.</li>
+            <li><strong>Q:</strong> How do I propose an action in response to a dispatch?</li>
+            <li><strong>A:</strong> Spend a portion of your currency to propose an action, which other players can then
+                vote
+                on.</li>
+            <li><strong>Q:</strong> How do I vote on a proposal?</li>
+            <li><strong>A:</strong> Use your credits to vote on proposals that align with your faction's goals.</li>
+            <li><strong>Q:</strong> How do I check my balance of credits?</li>
+            <li><strong>A:</strong> Use the command !balance to check your balance of credits.</li>
+            <li><strong>Q:</strong> How do I get more credits?</li>
+            <li><strong>A:</strong> Credits are awarded based on participation and successful proposals.</li>
+            <li><strong>Q:</strong> Can I switch factions during the game?</li>
+            <li><strong>A:</strong> No, players must choose a faction at the beginning of the game and cannot switch
+                factions.</li>
+            <li><strong>Q:</strong> How long does the game last?</li>
+            <li><strong>A:</strong> The game lasts for a predetermined amount of time, with specific timings agreed upon
+                by
+                the players.</li>
+        </ul>
+    </div>
 </body>
 
 </html>
