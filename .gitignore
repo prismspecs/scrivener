@@ -1,4 +1,5 @@
 .env
+.DS_Store
 
 # don't include data/ folder except for config.json
 data/players.json
