@@ -119,7 +119,7 @@ client.on('messageCreate', async (message) => {
         }
 
         else if (message.content.startsWith('!howto')) {
-            const welcomeMessage = "Each player begins with digital currency for a DAO established by the four factions in order to build a new world on the principles of self-determination, environmentalism, and egalitarianism. The currency can be pledged to advance projects which respond to material conditions within the game. If your proposal wins the voting round you earn all of the pledged currency. If you lose, you lose all of the pledged currency. The accepted proposal will alter the course of the game world and thus future situations and proposals.\n\nSome helpful commands:\n\n";
+            const welcomeMessage = "Some helpful commands:\n\n";
             const commandListString = commandList.join('\n');
             //message.channel.send(`${welcomeMessage}${commandListString}\n\nGood luck!`);
             message.reply({ content: `${welcomeMessage}${commandListString}\n\nGood luck!`, ephemeral: true });
