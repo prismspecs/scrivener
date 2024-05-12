@@ -13,7 +13,7 @@
     "axios": "^1.6.8",
     "bimg": "^0.1.5",
     "discord-vote": "^1.0.4",
-    "discord.js": "^14.14.1",
+    "discord.js": "^14.15.2",
     "discord.js-rate-limiter": "^1.3.2",
     "dotenv": "^16.4.5",
     "node-cron": "^3.0.3",

@@ -46,8 +46,8 @@ const commandList = [
     '!info - Check your credits and other information.',
     '!factions - Get information on the political factions.',
     '!propose [your proposal] - Propose an idea.',
-    '!vote [duration] [title] - Create a vote.',
-    '!advice - Get advice.'
+    '!vote - Cast a vote.',
+    '!advice - Get advice from your faction.'
 ];
 
 
