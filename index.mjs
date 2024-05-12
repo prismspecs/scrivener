@@ -45,10 +45,12 @@ const commandList = [
     '!join - Join the game manually.',
     '!info - Check your credits and other information.',
     '!factions - Get information on the political factions.',
+    '!dispatch - Show the current dispatch.',
     '!propose [your proposal] - Propose an idea.',
     '!vote - Cast a vote.',
     '!advice - Get advice from your faction.',
-    '!advice [faction] - Get advice from a specific faction. Factions include marxists, progressives, anarchists, monads, and eschatologists.'
+    '!advice [faction] - Get advice from a specific faction. Factions include marxists, progressives, anarchists, monads, and eschatologists.',
+    'visit https://prismspecs.github.io/scrivener/howtoplay.html for more information.'
 ];
 
 
@@ -72,7 +74,7 @@ client.once('ready', () => {
     // schedule a task to run at Xpm every day
     // format is minutes hours day month dayOfWeek
     cron.schedule('37 20 * * *', () => {
-        client.channels.cache.get(config.CHANNEL_ID).send('cron test!');
+        // client.channels.cache.get(config.CHANNEL_ID).send('cron test!');
     });
 
 });
@@ -171,11 +173,14 @@ client.on('messageCreate', async (message) => {
             // reply with balance and faction
             message.reply(`${username}, you have ${myBalance} ${config.currency}. You are a member of the ${myFaction} faction.`);
         }
+        else if (message.content.startsWith('!dispatch')) {
+            showDispatch(message);
+        }
         else if (message.content.startsWith('!advice')) {
             // is there a word after !advice?
             let factionName = message.content.split(' ')[1];
 
-            console.log(factionName);
+            //console.log(factionName);
 
             // get rid of any extra characters in the faction name
             if (factionName) {
@@ -320,9 +325,14 @@ async function advice(message, factionName) {
     if (!message.author.bot) {
         try {
 
-            const response = await promptOllama(latestDispatch, "", "respond as if you were a leader of the " + faction.name + " faction, which believes in " + advice + " but give advice specific to this situation. Be certain to limit your response to 1500 characters or fewer");
+            let response = await promptOllama(latestDispatch, "Limit your response to 1500 characters or fewer: ", "respond as if you were a leader of the " + faction.name + " faction, which believes in " + advice + " but give advice specific to this situation. Be certain to limit your response to 1500 characters or fewer!");
 
             // console.log(response);
+
+            // if the response is longer than 1800 characters, cut it off
+            if (response.length > 1800) {
+                response = response.substring(0, 1800) + '...';
+            }
 
             // send the content back to the Discord channel
             message.reply(`${faction.name}: ${response}`);
@@ -433,6 +443,35 @@ async function generateTextTest(message) {
             message.reply('An error occurred while processing your request.');
         }
     }
+}
+
+async function showDispatch(message) {
+    // get the latest dispatch from history-of-events.json using pop (make this shift() if pop returns the wrong one...)
+    const history = loadFromJSON(`${config.dataFolder}/history-of-events.json`);
+    const dispatch = Object.values(history).pop();
+
+    console.log(dispatch);
+
+    const eventImage = new AttachmentBuilder(`${config.dispatchFolder}/${dispatch.image}`).setName("event.jpg");
+
+    const description = "Comrades, something has happened that requires our attention.";
+
+    // create a new embed
+    const embed = new EmbedBuilder()
+        .setColor(0xFF0000)
+        .setTitle('DISPATCH')
+        .setDescription(description)
+        .addFields(
+            { name: "DISPATCH", value: dispatch.text },
+        )
+        .addFields(
+            { name: 'Proposals', value: "Proposals are currently being accepted. Use the !propose command to draft a proposal." },
+        )
+        .setImage("attachment://event.jpg") // set the image using the attachment
+
+    // send the embed to the channel
+    message.channel.send({ embeds: [embed], files: [eventImage] });
+
 }
 
 async function generateDispatch(message, dispatchType) {
