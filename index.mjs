@@ -137,6 +137,20 @@ client.on('messageCreate', async (message) => {
             propose(message);
 
         }
+
+        if (message.content.startsWith('!proposals')) {
+            // list all current proposals
+            const proposals = loadFromJSON(`${config.dataFolder}/proposals.json`);
+
+            let proposalList = '';
+            for (let proposal in proposals) {
+                proposalList += `**${proposals[proposal].proposerName}**:\n`;
+                proposalList += `${proposals[proposal].text}\n\n`;
+            }
+            message.reply(proposalList);
+
+        }
+
         else if (message.content.startsWith('!vote')) {
 
             if (game.state !== 'voting') {
@@ -265,24 +279,45 @@ async function advice(message) {
 
 async function propose(message) {
 
-    // get lastDispatch from game.json
-    game = loadFromJSON(`${config.dataFolder}/game.json`);
-
-    // make sure it has been less than config.votingDurationHours since the last dispatch
-    if (Date.now() - game.lastDispatch > config.votingDurationHours * 60 * 60 * 1000) {
-        message.reply(`Proposals are not allowed at this time. You can only propose a new idea within ${config.votingDurationHours} hours of the last dispatch.`);
+    // if the message is blank after !propose, return
+    if (message.content.split(' ').length === 1) {
+        message.reply({
+            content: 'Please include your proposal after !propose.',
+            ephemeral: true
+        });
         return;
     }
 
-    // check if the user is in the game
-    if (!(message.author.id in balances)) {
-        message.reply('You are not in the game. Only players can propose ideas.');
+    // get lastDispatch time from game.json
+    game = loadFromJSON(`${config.dataFolder}/game.json`);
+
+    // load players
+    players = loadFromJSON(`${config.dataFolder}/players.json`);
+
+    // make sure it has been less than config.votingDurationHours since the last dispatch
+    if (Date.now() - game.lastDispatch > config.votingDurationHours * 60 * 60 * 1000) {
+        message.reply({
+            content: `Proposals are not allowed at this time. You can only propose a new idea within ${config.votingDurationHours} hours of the last dispatch.`,
+            ephemeral: true
+        });
+        return;
+    }
+
+    // check if the player is in the game
+    if (!players.find(player => player.discordId === message.author.id)) {
+        message.reply({
+            content: 'You are not in the game. Only players can propose ideas.',
+            ephemeral: true
+        });
         return;
     }
 
     // check if the user has enough balance to propose
-    if (balances[message.author.id] < config.proposalCost) {
-        message.reply(`You do not have enough ${config.currency} to propose. It costs ${config.proposalCost} ${config.currency} to propose an idea.`);
+    if (players.find(player => player.discordId === message.author.id).balance < config.proposalCost) {
+        message.reply({
+            content: `You do not have enough ${config.currency} to propose. It costs ${config.proposalCost} ${config.currency} to propose an idea.`,
+            ephemeral: true
+        });
         return;
     }
 
@@ -297,19 +332,20 @@ async function propose(message) {
     proposals[uuid] = {
         text: newMessage,
         proposer: message.author.id,
-        votes: 0
+        proposerName: message.member.displayName,
+        votes: 0,
+        voters: []
     };
 
     // save the proposals to the file
     saveToJSON(`${config.dataFolder}/proposals.json`, proposals);
 
     // deduct the cost from the user's balance
-    balances[message.author.id] -= config.proposalCost;
-    saveToJSON(`${config.dataFolder}/balances.json`, balances);
+    players.find(player => player.discordId === message.author.id).balance -= config.proposalCost;
 
     // message to channel
     let username = message.member.displayName;
-    message.channel.send(`${username} has proposed: ${newMessage}.`);
+    message.channel.send(`${username} has proposed: ${newMessage}`);
 
 }
 
@@ -479,6 +515,8 @@ async function changeState(newState) {
 
     if (newState === 'results') {
         description += "\n\n" + await getResults(client, config);
+
+        description += "\n\nThe proposed action will be underway immediately... time will tell if it was the right choice. We should know within a day.";
 
         //distributeCredits(client, config, proposals, sortedProposals);
     }

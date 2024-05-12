@@ -4,6 +4,7 @@ import config from './data/config.json' assert { type: 'json' };
 
 export async function initiateVote(message) {
     const proposals = loadFromJSON(`${config.dataFolder}/proposals.json`);
+    const players = loadFromJSON(`${config.dataFolder}/players.json`);
 
     const rows = [];
     let row = new ActionRowBuilder();
@@ -11,9 +12,14 @@ export async function initiateVote(message) {
 
     // for each proposal, create a button
     for (let proposal in proposals) {
+
+        // get player displayName from proposer
+        const proposer = players.find(p => p.discordId === proposals[proposal].proposer);
+
         const button = new ButtonBuilder()
             .setCustomId(proposal)
-            .setLabel(proposals[proposal].text)
+            //.setLabel(proposals[proposal].text)
+            .setLabel(proposer.displayName)
             .setStyle(ButtonStyle.Primary);
 
         row.addComponents(button);
@@ -32,14 +38,22 @@ export async function initiateVote(message) {
     }
 
     // message channel the votes for each proposal at the moment
-    let voteSummary = 'Current votes for each proposal:\n';
+    let voteSummary = 'Please vote on one of the following proposals:\n\n';
     for (let proposal in proposals) {
-        voteSummary += `**${proposals[proposal].text}**: ${proposals[proposal].votes}\n`;
+        // first send the name of the proposer
+        const proposer = players.find(p => p.discordId === proposals[proposal].proposer);
+        voteSummary += `**${proposer.displayName}**:\n`;
+        voteSummary += `${proposals[proposal].text}\n`;
+        voteSummary += `Current votes: ${proposals[proposal].votes}\n\n`;
     }
-    // send it ephemeral as a reply to user
-    message.reply({ content: voteSummary, ephemeral: true });
 
-    await message.reply({ content: 'Please vote for a proposal:', components: rows, ephemeral: true });
+    // send as DM to user
+    message.author.send(voteSummary);
+    // await message.author.send({ content: 'Please vote for a proposal:', components: rows });
+
+    // send it ephemeral as a reply to user
+    //message.reply({ content: voteSummary, ephemeral: true });
+    await message.reply({ content: 'The active proposals have been sent to your DMs. Please vote for a proposal:', components: rows, ephemeral: true });
 }
 export async function handleInteractionCreate(interaction) {
 
@@ -54,14 +68,16 @@ export async function handleInteractionCreate(interaction) {
         return;
     }
 
-    if (!proposals[interaction.customId].voters) {
-        proposals[interaction.customId].voters = [];
-    }
+    // if (!proposals[interaction.customId].voters) {
+    //     console.log("voters property not found, creating it");
+    //     proposals[interaction.customId].voters = [];
+    // }
 
     // check entire proposals to make sure the user hasn't voted yet
     for (const proposalId in proposals) {
         if (proposals.hasOwnProperty(proposalId)) {
             const proposal = proposals[proposalId];
+            //console.log("proposal: ", proposal);
             if (proposal.voters.includes(interaction.user.id)) {
                 interaction.reply({ content: 'You have already voted for this proposal.', ephemeral: true });
                 return;
@@ -69,18 +85,22 @@ export async function handleInteractionCreate(interaction) {
         }
     }
 
-
     proposals[interaction.customId].votes++;
 
     // add user to the list of voters
     proposals[interaction.customId].voters.push(interaction.user.id);
 
+    const interactionUser = await interaction.guild.members.fetch(interaction.user.id)
+
+    const nickName = interactionUser.nickname
+
     // message to channel that the user has voted
-    const username = interaction.user.username;
+    const username = nickName;
     const proposalText = proposals[interaction.customId].text;
+    const proposerName = proposals[interaction.customId].proposerName;
     const voteCount = proposals[interaction.customId].votes;
 
-    interaction.channel.send(`${username} has voted for ${proposalText}. Current votes for this proposal: ${voteCount}.`);    //await interaction.reply({ content: 'You clicked Button 2!', ephemeral: true });
+    interaction.reply(`${username} has voted for ${proposerName}'s proposal. Current votes for this proposal: ${voteCount}.`);    //await interaction.reply({ content: 'You clicked Button 2!', ephemeral: true });
 
     // write the updated proposals to the file
     saveToJSON(`${config.dataFolder}/proposals.json`, proposals);
@@ -120,7 +140,7 @@ export async function distributeCredits(client, config, topProposal, numProposal
     player.balance += 1000;
 
 
-    console.log(players);
+    //console.log(players);
 
     // announce to channel
     //const channel = client.channels.cache.get(config.CHANNEL_ID);
