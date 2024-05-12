@@ -45,8 +45,14 @@
         }
 
         img {
-            width: 100%;
+            max-width: 100%;
             margin-bottom: 20px;
+        }
+
+        .command {
+            background-color: #000;
+            color: #fff;
+            padding: 2px;
         }
 
         @media (max-width: 800px) {
@@ -64,7 +70,8 @@
 
         <p>The game takes place on the Discord server, in the #scrivener-game channel.</p>
 
-        <p>To begin, type !join</p>
+        <p>To begin, type !join
+        </p>
         <img src="images/join.png" alt="">
 
         <p>To get a list of commands you can type !howto</p>
@@ -94,10 +101,46 @@
             <li>Friday 6pm CET: Results</li>
         </ul>
 
+        <h2>Dispatches</h2>
+
+        <p>Dispatches are the starting point for each cycle. They are either a crisis or an opportunity. A crisis is a
+            negative event that requires a response, such as a natural disaster. It will look like this:</p>
+
+        <img src="images/dispatch.png" alt="">
+
+        <p>Each <strong>Dispatch</strong> is immediately followed by a <strong>Proposals</strong> phase.</p>
+
+        <h2>Proposal phase</h2>
+
+        <p>The <strong>Proposal</strong> phase starts with an image like this:</p>
+        <img src="images/proposal-phase.png" alt="">
+
+        <p>During the <strong>Proposal</strong> phase you can type !propose followed by your proposal. For example, if
+            you want to
+            propose that your faction occupy the UN headquarters, you would type:</p>
+
+        <p>!propose Occupy the UN headquarters</p>
+
+        <img src="images/propose.png" alt="">
+
+        <p>You can also type !proposals to see a list of all the proposals that have been made.</p>
+
         <p>During the Proposals period you can type !advice to ask your faction for inspiration on what to propose</p>
         <img src="images/advice.png" alt="">
 
+        <h2>Voting phase</h2>
+
+        <p>This phase begins with an image like this:</p>
+        <img src="images/voting-phase.png" alt="">
+
     </div>
+
+    <script>
+        // find any text that begins with ! and wrap it in a command tag
+        window.onload = function () {
+            document.body.innerHTML = document.body.innerHTML.replace(/(![^\s]+)(?=\s|\b)/g, '<span class="command">$1</span>');
+        }
+    </script>
 </body>
 
 </html>
