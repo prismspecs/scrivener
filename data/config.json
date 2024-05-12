@@ -25,6 +25,7 @@
     "crisisThumbnail": "dispatch-crisis-small.jpg",
     "votingDurationHours": 24,
     "proposalCost": 10,
+    "proposalReturn": 20,
     "startingBalance": 100,
     "currency": "🪙",
     "stateTexts": {

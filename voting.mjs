@@ -86,3 +86,91 @@ export async function handleInteractionCreate(interaction) {
     saveToJSON(`${config.dataFolder}/proposals.json`, proposals);
 
 };
+
+export async function getResults(client, config) {
+    const proposals = loadFromJSON(`${config.dataFolder}/proposals.json`);
+
+    // sort the proposals by votes
+    const sortedProposals = Object.keys(proposals).sort((a, b) => proposals[b].votes - proposals[a].votes);
+
+    // create a string with the results
+    let results = '__RESULTS__\n';
+    for (let i = 0; i < sortedProposals.length; i++) {
+        const proposal = proposals[sortedProposals[i]];
+        results += `${i + 1}. **${proposal.text}**: ${proposal.votes} votes\n`;
+    }
+
+    const numProposals = sortedProposals.length;
+
+    results += "\n" + await distributeCredits(client, config, proposals[sortedProposals[0]], numProposals);
+    resetProposals(proposals);
+
+    return results;
+
+}
+
+export async function distributeCredits(client, config, topProposal, numProposals) {
+
+    let responseString = "";
+
+    let players = loadFromJSON(`${config.dataFolder}/players.json`);
+
+    // find player that matches winningProposer.discordId and add the credits
+    const player = await players.find(p => p.discordId === topProposal.proposer);
+    player.balance += 1000;
+
+
+    console.log(players);
+
+    // announce to channel
+    //const channel = client.channels.cache.get(config.CHANNEL_ID);
+    //channel.send(`The people have agreed on ${player.displayName}'s proposal, so ${config.proposalReturn}${config.currency} have been redistributed to their account.`);
+
+    responseString += `The people have agreed on ${player.displayName}'s proposal, so ${config.proposalReturn}${config.currency} have been redistributed to their account.\n`;
+
+    if (numProposals > 2) {
+        const creditsDispersed = config.proposalCost * numProposals - config.proposalReturn;
+        //channel.send(`The remaining ${creditsDispersed}${config.currency} spent on proposals has been invested in the selected proposal.`);
+        responseString += `The remaining ${creditsDispersed}${config.currency} spent on proposals has been invested in the selected proposal.\n`;
+
+        if (player) {
+            player.balance += config.proposalReturn;
+        }
+
+    }
+    else if (numProposals == 1) {
+        //channel.send(`No ${config.currency} remains, since there was only one proposal. The credits have been returned to the proposer.`);
+        responseString += `No ${config.currency} remains, since there was only one proposal. The credits have been returned to the proposer.\n`;
+
+        // send the credits to the user
+        if (player) {
+            player.balance += config.proposalCost;
+        }
+    }
+    else if (numProposals == 0) {
+        //channel.send(`No proposals were made, so the ${config.currency} has been returned to the proposer.`);
+        responseString += `No proposals were made, so the ${config.currency} has been returned to the proposer.\n`;
+        // send the credits to the user
+        if (player) {
+            player.balance += config.proposalCost;
+        }
+    }
+
+    // write the updated players to the file
+    saveToJSON(`${config.dataFolder}/players.json`, players);
+
+    return responseString;
+
+}
+
+export async function resetProposals(proposals) {
+
+    // copy proposals to data/old-proposals-<timestamp>.json
+    const timestamp = new Date().toISOString().replace(/:/g, '-');
+    saveToJSON(`${config.dataFolder}/old-proposals/${timestamp}.json`, proposals);
+
+    // erase the proposals.json entirely
+    proposals = {};
+
+    saveToJSON(`${config.dataFolder}/proposals.json`, proposals);
+}

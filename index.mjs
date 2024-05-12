@@ -5,7 +5,7 @@ import { Client, GatewayIntentBits, Partials, EmbedBuilder, AttachmentBuilder, B
 import { ActionRowBuilder, ButtonBuilder } from 'discord.js';   // voting
 import { Poll, PollLayoutType } from 'discord.js';  // voting (official poll)
 import { commands, setupCommands } from './commands.mjs';
-import { initiateVote, handleInteractionCreate } from './voting.mjs';
+import { initiateVote, handleInteractionCreate, getResults, distributeCredits } from './voting.mjs';
 import { generateUUID, showFactions, promptOllama, removeCommandPrefix, summarize, loadFromJSON, saveToJSON } from './helpers.mjs';
 import { RateLimiter } from 'discord.js-rate-limiter';
 import cron from 'node-cron';
@@ -128,11 +128,6 @@ client.on('messageCreate', async (message) => {
             showFactions(message, config);
         }
 
-        else if (message.content.startsWith('!dispatch')) {
-            // create a dispatch
-            generateDispatch(message);
-
-        }
         else if (message.content.startsWith('!propose')) {
             if (game.state !== 'proposal') {
                 message.reply('Proposals are not allowed at this time. Please wait for the next dispatch.');
@@ -344,12 +339,14 @@ async function generateTextTest(message) {
     }
 }
 
-async function generateDispatch(message) {
+async function generateDispatch(message, dispatchType) {
 
     // read from next-dispatch.json as JSON
     let dispatch = loadFromJSON(`${config.dataFolder}/next-dispatch.json`);
 
     const uuid = generateUUID(dispatch.text);
+
+    history = loadFromJSON(`${config.dataFolder}/history-of-events.json`);
 
     // check if this dispatch is alreay in history
     if (uuid in history) {
@@ -362,7 +359,6 @@ async function generateDispatch(message) {
     saveToJSON(`${config.dataFolder}/history-of-events.json`, history);
 
 
-
     // remove the dispatch from next-dispatch.json
     // fs.writeFileSync(`${config.dataFolder}/next-dispatch.json`, JSON.stringify({}));
 
@@ -372,13 +368,14 @@ async function generateDispatch(message) {
     // test making an image attachment (get image from config.dataFolder/config.imageFolder/config.dispatchFolder)/dispatch.image
 
     const eventImage = new AttachmentBuilder(`${config.dispatchFolder}/${dispatch.image}`).setName("event.jpg");
-    const iconURL = new AttachmentBuilder(`${config.imageFolder}/${config.gameIcon}`).setName('icon.jpg');
-    const thumbnailURL = new AttachmentBuilder(`${config.imageFolder}/${config.crisisThumbnail}`).setName('thumbnail.jpg');
+    const iconURL = new AttachmentBuilder(`${config.imageFolder}/${config.crisisThumbnail}`).setName('icon.jpg')
+    //const iconURL = new AttachmentBuilder(`${config.imageFolder}/${config.gameIcon}`).setName('icon.jpg');
+    //const thumbnailURL = new AttachmentBuilder(`${config.imageFolder}/${config.crisisThumbnail}`).setName('thumbnail.jpg');
 
-    console.log(iconURL.attachment);
-    console.log(thumbnailURL.attachment);
+    // console.log(iconURL.attachment);
+    // console.log(thumbnailURL.attachment);
 
-    const description = "Something has happened that requires your attention. Proposals will be accepted for the next 24 hours. **This process begins now at " + new Date().toLocaleString() + ".**";
+    const description = "Comrades, something has happened that requires our attention.";
 
     // alternatively use b64 buffer
     // const b64image = '';
@@ -389,20 +386,23 @@ async function generateDispatch(message) {
     // create a new embed
     const embed = new EmbedBuilder()
         .setColor(0xFF0000)
-        .setTitle('Dispatch')
+        .setTitle('DISPATCH')
         // .setURL('https://discord.js.org/')
-        .setAuthor({ name: 'The Game', iconURL: "attachment://icon.jpg", url: 'https://discord.js.org' })
+        //.setAuthor({ name: config.gameName, iconURL: "attachment://icon.jpg", url: 'https://discord.js.org' })
         .setDescription(description)
-        .setThumbnail("attachment://thumbnail.jpg")
+        // .setThumbnail("attachment://thumbnail.jpg")
         .addFields(
-            { name: 'Crisis', value: dispatch.text },
+            { name: dispatchType, value: dispatch.text },
+        )
+        .addFields(
+            { name: 'Response', value: "Proposals will be accepted for the next 24 hours. **This process begins now at " + new Date().toLocaleString() + ".**" },
         )
         .setImage("attachment://event.jpg") // set the image using the attachment
     // .setTimestamp("test")
     // .setFooter({ text: 'Some footer text here', iconURL: 'https://i.imgur.com/AfFp7pu.png' });
 
     // send the embed to the channel
-    message.channel.send({ embeds: [embed], files: [eventImage, iconURL, thumbnailURL] });
+    message.channel.send({ embeds: [embed], files: [eventImage] });
 
     // set lastDispatch time to now
     game.lastDispatch = Date.now();
@@ -424,6 +424,14 @@ function adminCommand(message) {
     const command = message.content.split(' ')[1];
 
     switch (command) {
+        case 'dispatch-crisis':
+            generateDispatch(message, "Crisis");
+            changeState('proposal');
+            break;
+        case 'dispatch-opportunity':
+            generateDispatch(message, "Opportunity");
+            changeState('proposal');
+            break;
         case 'proposal':
             changeState('proposal');
             break;
@@ -460,14 +468,20 @@ function adminCommand(message) {
 
 }
 
-function changeState(newState) {
+async function changeState(newState) {
     game.state = newState;
     saveToJSON(`${config.dataFolder}/game.json`, game);
 
     // announce to channel as an embed with image
     const image = new AttachmentBuilder(`${config.imageFolder}/${newState}.jpg`).setName("state.jpg");
 
-    const description = config.stateTexts[newState];
+    let description = config.stateTexts[newState];
+
+    if (newState === 'results') {
+        description += "\n\n" + await getResults(client, config);
+
+        //distributeCredits(client, config, proposals, sortedProposals);
+    }
 
     const embed = new EmbedBuilder()
         .setTitle(newState.toUpperCase())
@@ -476,8 +490,7 @@ function changeState(newState) {
         .setColor(0xFF00FF);
 
     client.channels.cache.get(config.CHANNEL_ID).send({ embeds: [embed], files: [image] });
+
 }
 
-
 client.login(process.env.DISCORD_TOKEN);
-
