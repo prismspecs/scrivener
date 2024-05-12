@@ -47,7 +47,8 @@ const commandList = [
     '!factions - Get information on the political factions.',
     '!propose [your proposal] - Propose an idea.',
     '!vote - Cast a vote.',
-    '!advice - Get advice from your faction.'
+    '!advice - Get advice from your faction.',
+    '!advice [faction] - Get advice from a specific faction. Factions include marxists, progressives, anarchists, monads, and eschatologists.'
 ];
 
 
@@ -171,29 +172,42 @@ client.on('messageCreate', async (message) => {
             message.reply(`${username}, you have ${myBalance} ${config.currency}. You are a member of the ${myFaction} faction.`);
         }
         else if (message.content.startsWith('!advice')) {
-            advice(message);
+            // is there a word after !advice?
+            let factionName = message.content.split(' ')[1];
+
+            console.log(factionName);
+
+            // get rid of any extra characters in the faction name
+            if (factionName) {
+                factionName = factionName.replace(/[^a-zA-Z]/g, '');
+            }
+
+            // if there is a word after !advice, use that as the faction name
+            if (factionName) {
+                switch (factionName) {
+                    case "marxists":
+                        factionName = "Forever Marxists";
+                        break;
+                    case "progressives":
+                        factionName = "Progressive Deep State";
+                        break;
+                    case "anarchists":
+                        factionName = "Anarcho-Syndicalists";
+                        break;
+                    case "monads":
+                        factionName = "Beyond-Us Monadists";
+                        break;
+                    case "eschatologists":
+                        factionName = "Postcapitalist Eschatologists";
+                        break;
+                }
+                advice(message, factionName);
+            } else {
+                advice(message);
+            }
         }
         else if (message.content.startsWith('!join')) {
             joinGame(message);
-            // add user to the game and include them in players.json, and give them 100 credits, but only if they're not already in the game
-            // if (!(message.author.id in balances)) {
-            //     balances[message.author.id] = 100;
-
-            //     // message to channel welcoming player
-            //     let username = message.member.displayName;
-            //     message.channel.send(`Welcome to the game, ${username}. The DAO has allocated you 100 ${config.currency} based on your tuition.`);
-
-            //     // save the balances to the file
-            //     fs.writeFileSync(`${config.dataFolder}/balances.json`, JSON.stringify(balances));
-
-            //     // save player to players.json
-            //     players[message.author.id] = message.member.displayName;
-            //     fs.writeFileSync(`${config.dataFolder}/players.json`, JSON.stringify(players));
-
-            // }
-            // else {
-            //     message.author.send('You are already in the game.');
-            // }
         } else if (message.content.startsWith('!admin')) {
             if (isPlayerAdmin(message.author.id)) {
                 adminCommand(message);
@@ -271,10 +285,56 @@ function joinGame(message) {
 
 
 // REMOVE ...
-async function advice(message) {
-    // post an image with caption
-    const image = new AttachmentBuilder('sketches/logo-anarchists.jpg');
-    message.channel.send({ files: [image], content: '**Prefigurative Anarcho-Syndicalists**: "Reject the AIs appointment and mobilize grassroots efforts to reclaim the museums as community spaces. Instead of relying on hierarchical structures, propose a cooperative model in which museums are governed by the public they represent."' });
+async function advice(message, factionName) {
+
+    let advice;
+    let faction;
+
+    if (!factionName) {
+
+        // load players from json
+        players = loadFromJSON(`${config.dataFolder}/players.json`);
+
+        // get the faction associated with the player from players.json
+        const player = players.find(p => p.discordId === message.author.id);
+
+        // find the faction which matches the player's faction
+        faction = factions.find(f => f.name === player.faction);
+
+        // get the advice from the faction object
+        advice = faction.advice;
+    } else {
+        // get the faction associated with factionName
+        faction = factions.find(f => f.name === factionName);
+        advice = faction.advice;
+    }
+
+    // get the latest dispatch from history-of-events.json
+    const history = loadFromJSON(`${config.dataFolder}/history-of-events.json`);
+    const latestDispatch = Object.values(history).pop().text;
+
+    console.log(latestDispatch);
+
+
+    // check if the message is not from a bot to avoid an infinite loop
+    if (!message.author.bot) {
+        try {
+
+            const response = await promptOllama(latestDispatch, "", "respond as if you were a leader of the " + faction.name + " faction, which believes in " + advice + " but give advice specific to this situation. Be certain to limit your response to 1500 characters or fewer");
+
+            // console.log(response);
+
+            // send the content back to the Discord channel
+            message.reply(`${faction.name}: ${response}`);
+
+            //message.reply("Summary: " + await summarize(response));
+
+        } catch (error) {
+            console.error('Error making HTTP request:', error.message);
+            message.reply('An error occurred while processing your request.');
+        }
+    }
+
 }
 
 async function propose(message) {
