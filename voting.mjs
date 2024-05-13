@@ -38,17 +38,20 @@ export async function initiateVote(message) {
     }
 
     // message channel the votes for each proposal at the moment
-    let voteSummary = 'Please vote on one of the following proposals:\n\n';
+    message.author.send('Please vote on one of the following proposals:');
+
     for (let proposal in proposals) {
+
         // first send the name of the proposer
         const proposer = players.find(p => p.discordId === proposals[proposal].proposer);
-        voteSummary += `**${proposer.displayName}**:\n`;
+        let voteSummary = `**${proposer.displayName}**:\n`;
         voteSummary += `${proposals[proposal].text}\n`;
         voteSummary += `Current votes: ${proposals[proposal].votes}\n\n`;
+        // send as DM to user
+        message.author.send(voteSummary);
     }
 
-    // send as DM to user
-    message.author.send(voteSummary);
+
     // await message.author.send({ content: 'Please vote for a proposal:', components: rows });
 
     // send it ephemeral as a reply to user
@@ -56,6 +59,8 @@ export async function initiateVote(message) {
     await message.reply({ content: 'The active proposals have been sent to your DMs. Please vote for a proposal:', components: rows, ephemeral: true });
 }
 export async function handleInteractionCreate(interaction) {
+
+
 
     const proposals = loadFromJSON(`${config.dataFolder}/proposals.json`);
 
@@ -80,6 +85,7 @@ export async function handleInteractionCreate(interaction) {
             //console.log("proposal: ", proposal);
             if (proposal.voters.includes(interaction.user.id)) {
                 interaction.reply({ content: 'You have already voted for this proposal.', ephemeral: true });
+
                 return;
             }
         }
@@ -101,6 +107,9 @@ export async function handleInteractionCreate(interaction) {
     const voteCount = proposals[interaction.customId].votes;
 
     interaction.reply(`${username} has voted for ${proposerName}'s proposal. Current votes for this proposal: ${voteCount}.`);    //await interaction.reply({ content: 'You clicked Button 2!', ephemeral: true });
+
+    // delete original message
+    interaction.message.delete();   // i think...
 
     // write the updated proposals to the file
     saveToJSON(`${config.dataFolder}/proposals.json`, proposals);
