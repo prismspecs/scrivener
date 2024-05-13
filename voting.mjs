@@ -38,7 +38,7 @@ export async function initiateVote(message) {
     }
 
     // message channel the votes for each proposal at the moment
-    message.author.send('Please vote on one of the following proposals:');
+    message.author.send('__Please vote on one of the following proposals__');
 
     for (let proposal in proposals) {
 
@@ -46,7 +46,9 @@ export async function initiateVote(message) {
         const proposer = players.find(p => p.discordId === proposals[proposal].proposer);
         let voteSummary = `**${proposer.displayName}**:\n`;
         voteSummary += `${proposals[proposal].text}\n`;
-        voteSummary += `Current votes: ${proposals[proposal].votes}\n\n`;
+        voteSummary += `Current votes: ${proposals[proposal].votes}\n`;
+        voteSummary += "----------------\n"
+
         // send as DM to user
         message.author.send(voteSummary);
     }
@@ -98,10 +100,8 @@ export async function handleInteractionCreate(interaction) {
 
     const interactionUser = await interaction.guild.members.fetch(interaction.user.id)
 
-    const nickName = interactionUser.nickname
-
     // message to channel that the user has voted
-    const username = nickName;
+    const username = interactionUser.displayName;
     const proposalText = proposals[interaction.customId].text;
     const proposerName = proposals[interaction.customId].proposerName;
     const voteCount = proposals[interaction.customId].votes;

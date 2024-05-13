@@ -1,3 +1,5 @@
+[Jump to Scrivener project website](https://prismspecs.github.io/scrivener/)
+
 ## Ollama setup
 
 I had trouble with the default port, hence changing it to 8888, but whatever works. Oddly enough, I still had to make the request to the default port. I'm using the mistral model.

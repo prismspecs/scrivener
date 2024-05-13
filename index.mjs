@@ -172,7 +172,6 @@ client.on('messageCreate', async (message) => {
                         .setDescription(proposals[proposal].text + ", **current votes: " + proposals[proposal].votes + "**");
                     // .setFooter("Votes: " + proposals[proposal].votes);
 
-
                     message.channel.send({ embeds: [embed] });
                 }
 
