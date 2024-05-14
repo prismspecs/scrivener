@@ -21,6 +21,30 @@ npm install
 ```
 Make sure to add the .env file which includes the bot key
 
+## Set up pm2
+This starts the server when the computer boots
+```bash
+npm install -g pm2 # may require sudo
+
+# Starting the app
+pm2 start ~/weird-economies/index.mjs
+pm2 save    # saves the running processes
+            # if not saved, pm2 will forget
+            # the running apps on next boot
+
+
+# check status 
+pm2 list
+
+# IMPORTANT: If you want pm2 to start on system boot
+pm2 startup # starts pm2 on computer boot
+```
+
+To restart the app after updating:
+```bash
+pm2 restart index
+```
+
 ## Run Local
 
 ```bash
@@ -33,7 +57,7 @@ node index.mjs
 
 ## Run Remote
 
-This is not necessary if ollama is running as a service:
+This is not necessary if ollama is running as a service (which it should be by default):
 ```bash
 ssh vision@192.168.0.136
 cd weird-economies
