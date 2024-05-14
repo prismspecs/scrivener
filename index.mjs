@@ -9,6 +9,8 @@ import { initiateVote, handleInteractionCreate, getResults, distributeCredits } 
 import { generateUUID, showFactions, promptOllama, removeCommandPrefix, summarize, loadFromJSON, saveToJSON } from './helpers.mjs';
 import { RateLimiter } from 'discord.js-rate-limiter';
 import cron from 'node-cron';
+import { setupCronJobs } from './cronJobs.mjs';
+
 
 let manualMode = false;
 
@@ -64,28 +66,18 @@ client.once('ready', () => {
 
     console.log('Ready!');
 
-    // replace 'SERVER/GUILD_ID' and 'CHANNEL_ID' with your actual guild and channel IDs
+    // connect to guild and channel
     const guild = client.guilds.cache.get(config.SERVER_ID);
     if (!guild) return console.log('Unable to find the guild.');
 
     const channel = guild.channels.cache.get(config.CHANNEL_ID);
     if (!channel) return console.log('Unable to find the channel.');
 
+    // send a message to the channel when the bot comes online
     //channel.send('Scrivener is now online.');
 
-    // schedule a task to run at Xpm every day
-    // format is minutes hours day month dayOfWeek
-    cron.schedule('37 20 * * *', () => {
-        // client.channels.cache.get(config.CHANNEL_ID).send('cron test!');
-    });
-
-    // cron job for every Monday at 8pm CET
-    cron.schedule('0 20 * * 1', () => {
-        // change state to voting
-        if (!manualMode) {
-            changeState('voting');
-        }
-    });
+    // task scheduling
+    setupCronJobs(changeState, manualMode);
 
 });
 
@@ -660,11 +652,12 @@ async function changeState(newState) {
     let description = config.stateTexts[newState];
 
     if (newState === 'results') {
-        description += "\n\n" + await getResults(client, config);
+
+        const results = await getResults(client, config);
+        //description += "\n\n" + results;
 
         description += "\n\nThe proposed action will be underway immediately... time will tell if it was the right choice. We should know within a day.";
 
-        //distributeCredits(client, config, proposals, sortedProposals);
     }
 
     const embed = new EmbedBuilder()

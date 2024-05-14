@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'discord.js';
 import { loadFromJSON, saveToJSON } from './helpers.mjs';
 import config from './data/config.json' assert { type: 'json' };
 
@@ -62,8 +62,6 @@ export async function initiateVote(message) {
 }
 export async function handleInteractionCreate(interaction) {
 
-
-
     const proposals = loadFromJSON(`${config.dataFolder}/proposals.json`);
 
     if (!interaction.isButton()) return;
@@ -74,11 +72,6 @@ export async function handleInteractionCreate(interaction) {
         console.error(`No proposal found for id: ${interaction.customId}`);
         return;
     }
-
-    // if (!proposals[interaction.customId].voters) {
-    //     console.log("voters property not found, creating it");
-    //     proposals[interaction.customId].voters = [];
-    // }
 
     // check entire proposals to make sure the user hasn't voted yet
     for (const proposalId in proposals) {
@@ -102,7 +95,7 @@ export async function handleInteractionCreate(interaction) {
 
     // message to channel that the user has voted
     const username = interactionUser.displayName;
-    const proposalText = proposals[interaction.customId].text;
+    // const proposalText = proposals[interaction.customId].text;
     const proposerName = proposals[interaction.customId].proposerName;
     const voteCount = proposals[interaction.customId].votes;
 
@@ -117,21 +110,50 @@ export async function handleInteractionCreate(interaction) {
 };
 
 export async function getResults(client, config) {
+
     const proposals = loadFromJSON(`${config.dataFolder}/proposals.json`);
 
     // sort the proposals by votes
     const sortedProposals = Object.keys(proposals).sort((a, b) => proposals[b].votes - proposals[a].votes);
 
-    // create a string with the results
-    let results = '__RESULTS__\n';
+
+    // send message to channel
+    let results = "The results are in! Here are the votes for each proposal:\n";
+    const channelId = config.CHANNEL_ID;
+    const channel = client.channels.cache.get(channelId);
+    if (channel) {
+        channel.send(results);
+    } else {
+        console.error(`Channel ${channelId} not found`);
+    }
+
     for (let i = 0; i < sortedProposals.length; i++) {
         const proposal = proposals[sortedProposals[i]];
-        results += `${i + 1}. **${proposal.text}**: ${proposal.votes} votes\n`;
+
+        const shortenedText = proposal.text.length > 50 ? proposal.text.substring(0, 50) + "..." : proposal.text;
+
+        const result = `${i + 1}. **${shortenedText}**: ${proposal.votes} votes\n`;
+
+        // create embed
+        const embed = new EmbedBuilder()
+            .setColor(0xFF00FF)
+            // set title to the proposer's name
+            .setTitle(proposal.proposerName)
+            .setDescription(result);
+        client.channels.cache.get(config.CHANNEL_ID).send({ embeds: [embed] });
     }
 
     const numProposals = sortedProposals.length;
 
-    results += "\n" + await distributeCredits(client, config, proposals[sortedProposals[0]], numProposals);
+    const winningProposalText = await distributeCredits(client, config, proposals[sortedProposals[0]], numProposals);
+
+    // create embed
+    const embed = new EmbedBuilder()
+        .setColor(0xFF00FF)
+        .setTitle(`Vote Results`)
+        .setDescription(winningProposalText);
+    client.channels.cache.get(config.CHANNEL_ID).send({ embeds: [embed] });
+
     resetProposals(proposals);
 
     return results;
@@ -140,26 +162,20 @@ export async function getResults(client, config) {
 
 export async function distributeCredits(client, config, topProposal, numProposals) {
 
+    console.log("topProposal: ", topProposal);
+
     let responseString = "";
 
     let players = loadFromJSON(`${config.dataFolder}/players.json`);
 
     // find player that matches winningProposer.discordId and add the credits
     const player = await players.find(p => p.discordId === topProposal.proposer);
-    player.balance += 1000;
-
-
-    //console.log(players);
-
-    // announce to channel
-    //const channel = client.channels.cache.get(config.CHANNEL_ID);
-    //channel.send(`The people have agreed on ${player.displayName}'s proposal, so ${config.proposalReturn}${config.currency} have been redistributed to their account.`);
 
     responseString += `The people have agreed on ${player.displayName}'s proposal, so ${config.proposalReturn}${config.currency} have been redistributed to their account.\n`;
 
     if (numProposals > 2) {
         const creditsDispersed = config.proposalCost * numProposals - config.proposalReturn;
-        //channel.send(`The remaining ${creditsDispersed}${config.currency} spent on proposals has been invested in the selected proposal.`);
+
         responseString += `The remaining ${creditsDispersed}${config.currency} spent on proposals has been invested in the selected proposal.\n`;
 
         if (player) {
@@ -168,7 +184,7 @@ export async function distributeCredits(client, config, topProposal, numProposal
 
     }
     else if (numProposals == 1) {
-        //channel.send(`No ${config.currency} remains, since there was only one proposal. The credits have been returned to the proposer.`);
+
         responseString += `No ${config.currency} remains, since there was only one proposal. The credits have been returned to the proposer.\n`;
 
         // send the credits to the user
@@ -177,7 +193,7 @@ export async function distributeCredits(client, config, topProposal, numProposal
         }
     }
     else if (numProposals == 0) {
-        //channel.send(`No proposals were made, so the ${config.currency} has been returned to the proposer.`);
+
         responseString += `No proposals were made, so the ${config.currency} has been returned to the proposer.\n`;
         // send the credits to the user
         if (player) {
