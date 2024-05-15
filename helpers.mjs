@@ -36,6 +36,33 @@ export async function promptOllama(prompt, prepend, append) {
 
 }
 
+export function splitTextIntoChunks(text, maxLength) {
+    const chunks = [];
+    let startIndex = 0;
+
+    while (startIndex < text.length) {
+        let endIndex = startIndex + maxLength;
+        if (endIndex >= text.length) {
+            // Last chunk
+            chunks.push(text.substring(startIndex));
+            break;
+        }
+        // Find the nearest newline character before the end index
+        const nearestNewline = text.lastIndexOf('\n', endIndex);
+        if (nearestNewline !== -1 && nearestNewline > startIndex) {
+            // Break at nearest newline
+            endIndex = nearestNewline;
+        }
+        // Extract chunk
+        chunks.push(text.substring(startIndex, endIndex));
+        // Move start index to the next character after the newline
+        startIndex = endIndex + 1;
+    }
+
+    return chunks;
+}
+
+
 
 export async function showFactions(message, config) {
 

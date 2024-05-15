@@ -6,7 +6,7 @@ import { ActionRowBuilder, ButtonBuilder } from 'discord.js';   // voting
 import { Poll, PollLayoutType } from 'discord.js';  // voting (official poll)
 import { commands, setupCommands } from './commands.mjs';
 import { initiateVote, handleInteractionCreate, getResults, distributeCredits } from './voting.mjs';
-import { generateUUID, showFactions, promptOllama, removeCommandPrefix, summarize, loadFromJSON, saveToJSON } from './helpers.mjs';
+import { generateUUID, showFactions, promptOllama, removeCommandPrefix, summarize, loadFromJSON, saveToJSON, splitTextIntoChunks } from './helpers.mjs';
 import { RateLimiter } from 'discord.js-rate-limiter';
 import cron from 'node-cron';
 import { setupCronJobs } from './cronJobs.mjs';
@@ -309,7 +309,6 @@ function joinGame(message) {
 }
 
 
-// REMOVE ...
 async function advice(message, factionName) {
 
     let advice;
@@ -455,30 +454,30 @@ async function propose(message) {
 }
 
 // function to generate text
-async function generateTextTest(message) {
+// async function generateTextTest(message) {
 
-    // remove any prefix for this message, any word that begins with !
-    let newMessage = removeCommandPrefix(message.content);
+//     // remove any prefix for this message, any word that begins with !
+//     let newMessage = removeCommandPrefix(message.content);
 
-    // check if the message is not from a bot to avoid an infinite loop
-    if (!message.author.bot) {
-        try {
+//     // check if the message is not from a bot to avoid an infinite loop
+//     if (!message.author.bot) {
+//         try {
 
-            const response = await promptOllama(newMessage, "", config.promptAppend);
+//             const response = await promptOllama(newMessage, "", config.promptAppend);
 
-            // console.log(response);
+//             // console.log(response);
 
-            // send the content back to the Discord channel
-            message.reply(`Model Response: ${response}`);
+//             // send the content back to the Discord channel
+//             message.reply(`Model Response: ${response}`);
 
-            message.reply("Summary: " + await summarize(response));
+//             message.reply("Summary: " + await summarize(response));
 
-        } catch (error) {
-            console.error('Error making HTTP request:', error.message);
-            message.reply('An error occurred while processing your request.');
-        }
-    }
-}
+//         } catch (error) {
+//             console.error('Error making HTTP request:', error.message);
+//             message.reply('An error occurred while processing your request.');
+//         }
+//     }
+// }
 
 async function showDispatch(message) {
     // get the latest dispatch from history-of-events.json using pop (make this shift() if pop returns the wrong one...)
@@ -506,6 +505,52 @@ async function showDispatch(message) {
 
     // send the embed to the channel
     message.channel.send({ embeds: [embed], files: [eventImage] });
+
+}
+
+async function storyUpdate(message) {
+    // load story-update.json
+    const storyUpdate = loadFromJSON(`${config.dataFolder}/story-update.json`);
+
+    // break the message into multiple parts because the maximum length of a message is 2000 characters
+    const parts = splitTextIntoChunks(storyUpdate.text, 2000);
+
+    // send each part as a separate message
+    for (const part of parts) {
+        message.channel.send(part);
+    }
+
+    // send the image
+    const image = new AttachmentBuilder(`${config.dispatchFolder}/${storyUpdate.image}`).setName("story-update.jpg");
+    message.channel.send({ files: [image] });
+
+    // generate a uuid for the story update and add it to history-of-events.json
+    const first100Characters = storyUpdate.text.substring(0, 100);
+
+    const uuid = generateUUID(first100Characters);
+    history = loadFromJSON(`${config.dataFolder}/history-of-events.json`);
+
+    // check if this dispatch is alreay in history
+    if (uuid in history) {
+        console.log("duplicate story update");
+        return;
+    }
+
+    // get current timestamp
+    const now = new Date().toLocaleString();
+
+    // add the dispatch to history, should have text and image properties
+    // add the story update to history
+    history[uuid] = {
+        "text": storyUpdate.text,
+        "image": storyUpdate.image,
+        "timestamp": now
+    };
+
+    saveToJSON(`${config.dataFolder}/history-of-events.json`, history);
+
+    // set game mode to chilling
+    game.state = 'chilling';
 
 }
 
@@ -610,6 +655,9 @@ function adminCommand(message) {
             break;
         case 'endvote':
             changeState('results');
+            break;
+        case 'storyupdate':
+            storyUpdate(message);
             break;
         case 'echo':
             // send message to the main channel of everything after !admin echo
