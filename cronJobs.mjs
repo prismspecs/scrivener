@@ -15,4 +15,11 @@ export function setupCronJobs(changeState, manualMode) {
             changeState('results');
         }
     });
+    // cron job for every Wednesday at 6:00 CET
+    cron.schedule('0 18 * * 3', () => {
+        // change state to voting
+        if (!manualMode) {
+            changeState('voting');
+        }
+    });
 }

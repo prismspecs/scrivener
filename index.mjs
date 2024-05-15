@@ -1,16 +1,11 @@
-import fs from 'fs';    // filesystem for JSON stuff
-import axios from 'axios';
 import dotenv from 'dotenv'
 import { Client, GatewayIntentBits, Partials, EmbedBuilder, AttachmentBuilder, ButtonStyle } from 'discord.js';
 import { ActionRowBuilder, ButtonBuilder } from 'discord.js';   // voting
-import { Poll, PollLayoutType } from 'discord.js';  // voting (official poll)
 import { commands, setupCommands } from './commands.mjs';
 import { initiateVote, handleInteractionCreate, getResults, distributeCredits } from './voting.mjs';
-import { generateUUID, showFactions, promptOllama, removeCommandPrefix, summarize, loadFromJSON, saveToJSON, splitTextIntoChunks } from './helpers.mjs';
+import { generateUUID, showFactions, promptOllama, removeCommandPrefix, summarize, loadFromJSON, saveToJSON, splitTextIntoChunks, unpinAllMessages } from './helpers.mjs';
 import { RateLimiter } from 'discord.js-rate-limiter';
-import cron from 'node-cron';
 import { setupCronJobs } from './cronJobs.mjs';
-
 
 let manualMode = false;
 
@@ -515,14 +510,14 @@ async function storyUpdate(message) {
     // break the message into multiple parts because the maximum length of a message is 2000 characters
     const parts = splitTextIntoChunks(storyUpdate.text, 2000);
 
-    // send each part as a separate message
+    // send each part as a separate message to the main channel
     for (const part of parts) {
-        message.channel.send(part);
+        client.channels.cache.get(config.CHANNEL_ID).send(part);
     }
 
     // send the image
     const image = new AttachmentBuilder(`${config.dispatchFolder}/${storyUpdate.image}`).setName("story-update.jpg");
-    message.channel.send({ files: [image] });
+    client.channels.cache.get(config.CHANNEL_ID).send({ files: [image] });
 
     // generate a uuid for the story update and add it to history-of-events.json
     const first100Characters = storyUpdate.text.substring(0, 100);
@@ -554,10 +549,12 @@ async function storyUpdate(message) {
 
 }
 
-async function generateDispatch(message, dispatchType) {
+async function generateDispatch(message) {
 
-    // read from next-dispatch.json as JSON
-    let dispatch = loadFromJSON(`${config.dataFolder}/next-dispatch.json`);
+    // read from dispatch-next.json as JSON
+    let dispatch = loadFromJSON(`${config.dataFolder}/dispatch-next.json`);
+    // save dispatch to dispatch-current.json
+    saveToJSON(`${config.dataFolder}/dispatch-current.json`, dispatch);
 
     const uuid = generateUUID(dispatch.text);
 
@@ -569,63 +566,52 @@ async function generateDispatch(message, dispatchType) {
         return;
     }
 
+    // add timestamp to dispatch
+    dispatch.timestamp = Date.now();
+
     // add the dispatch to history
     history[uuid] = dispatch;
     saveToJSON(`${config.dataFolder}/history-of-events.json`, history);
-
-
-    // remove the dispatch from next-dispatch.json
-    // fs.writeFileSync(`${config.dataFolder}/next-dispatch.json`, JSON.stringify({}));
-
-
-    // const response = await promptOllama(prompt, '', config.dispatchAppend);
-
-    // test making an image attachment (get image from config.dataFolder/config.imageFolder/config.dispatchFolder)/dispatch.image
-
-    const eventImage = new AttachmentBuilder(`${config.dispatchFolder}/${dispatch.image}`).setName("event.jpg");
-    const iconURL = new AttachmentBuilder(`${config.imageFolder}/${config.crisisThumbnail}`).setName('icon.jpg')
-    //const iconURL = new AttachmentBuilder(`${config.imageFolder}/${config.gameIcon}`).setName('icon.jpg');
-    //const thumbnailURL = new AttachmentBuilder(`${config.imageFolder}/${config.crisisThumbnail}`).setName('thumbnail.jpg');
-
-    // console.log(iconURL.attachment);
-    // console.log(thumbnailURL.attachment);
-
-    const description = "Comrades, something has happened that requires our attention.";
-
-    // alternatively use b64 buffer
-    // const b64image = '';
-    // const data = b64image.split(',');
-    // const buf = Buffer.from(data[1], 'base64');
-    // const eventImage = new AttachmentBuilder(buf, 'test.jpg');
-
-    // create a new embed
-    const embed = new EmbedBuilder()
-        .setColor(0xFF0000)
-        .setTitle('DISPATCH')
-        // .setURL('https://discord.js.org/')
-        //.setAuthor({ name: config.gameName, iconURL: "attachment://icon.jpg", url: 'https://discord.js.org' })
-        .setDescription(description)
-        // .setThumbnail("attachment://thumbnail.jpg")
-        .addFields(
-            { name: dispatchType, value: dispatch.text },
-        )
-        .addFields(
-            { name: 'Response', value: "Proposals will be accepted for the next 24 hours. **This process begins now at " + new Date().toLocaleString() + ".**" },
-        )
-        .setImage("attachment://event.jpg") // set the image using the attachment
-    // .setTimestamp("test")
-    // .setFooter({ text: 'Some footer text here', iconURL: 'https://i.imgur.com/AfFp7pu.png' });
-
-    // send the embed to the channel
-    message.channel.send({ embeds: [embed], files: [eventImage] });
 
     // set lastDispatch time to now
     game.lastDispatch = Date.now();
     saveToJSON(`${config.dataFolder}/game.json`, game);
 
-    // pin message
-    // message.pin();
+    displayDispatch(message, dispatch);
+
 }
+
+function displayDispatch(message, dispatch) {
+    // create a new embed
+    const embed = new EmbedBuilder()
+        // set color to #55ff55 if dispatch.type is opportunity, or #ff5555 if dispatch.type is crisis
+        .setColor(dispatch.type === 'opportunity' ? 0x55ff55 : 0xff5555)
+        .setTitle('DISPATCH')
+        .setDescription(dispatch.type);
+    message.channel.send({ embeds: [embed] });
+
+    const dispatchImage = new AttachmentBuilder(`${config.dispatchFolder}/${dispatch.image}`).setName("event.jpg");
+    // send image to channel
+    message.channel.send({ files: [dispatchImage] });
+
+    // unpin previous messages
+    unpinAllMessages(message);
+
+    // send messages to channel and pin
+    message.channel.send(config.dispatchHeader).then(sentMessage => {
+        sentMessage.pin();
+    });
+
+    message.channel.send(dispatch.text).then(sentMessage => {
+        sentMessage.pin();
+    });
+
+    message.channel.send(config.dispatchInstructions).then(sentMessage => {
+        sentMessage.pin();
+    });
+}
+
+
 
 function isPlayerAdmin(discordId) {
     const player = players.find(p => p.discordId === discordId);
@@ -639,12 +625,8 @@ function adminCommand(message) {
     const command = message.content.split(' ')[1];
 
     switch (command) {
-        case 'dispatch-crisis':
-            generateDispatch(message, "Crisis");
-            changeState('proposal');
-            break;
-        case 'dispatch-opportunity':
-            generateDispatch(message, "Opportunity");
+        case 'dispatch':
+            generateDispatch(message);
             changeState('proposal');
             break;
         case 'proposal':
@@ -659,6 +641,10 @@ function adminCommand(message) {
         case 'storyupdate':
             storyUpdate(message);
             break;
+        case 'sendImage':
+            sendImage(message, image);
+            break;
+
         case 'echo':
             // send message to the main channel of everything after !admin echo
             const echoMessage = message.content.split(' ').slice(2).join(' ');
@@ -688,6 +674,12 @@ function adminCommand(message) {
     // message.channel.send(`Game state set to: ${game.state}`);
     // DM the user
 
+}
+
+// function to send an image
+function sendImage(message, image) {
+    const imageAttachment = new AttachmentBuilder(image).setName('image.jpg');
+    message.channel.send({ files: [imageAttachment] });
 }
 
 async function changeState(newState) {

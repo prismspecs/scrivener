@@ -14,6 +14,15 @@ export function generateUUID(text) {
     return result;
 }
 
+export function unpinAllMessages(message) {
+    message.channel.messages.fetchPinned().then(messages => {
+        messages.forEach(message => {
+            message.unpin();
+        }
+        );
+    });
+}
+
 export async function promptOllama(prompt, prepend, append) {
 
     try {
@@ -54,7 +63,7 @@ export function splitTextIntoChunks(text, maxLength) {
             endIndex = nearestNewline;
         }
         // Extract chunk
-        chunks.push(text.substring(startIndex, endIndex));
+        chunks.push((chunks.length > 0 ? ' ឵឵឵ ' : '') + text.substring(startIndex, endIndex));
         // Move start index to the next character after the newline
         startIndex = endIndex + 1;
     }
