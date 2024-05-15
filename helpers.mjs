@@ -14,13 +14,17 @@ export function generateUUID(text) {
     return result;
 }
 
-export function unpinAllMessages(message) {
-    message.channel.messages.fetchPinned().then(messages => {
-        messages.forEach(message => {
-            message.unpin();
-        }
-        );
+export function unpinAllMessages(client, channelId) {
+    // get all pinned messages in the channel
+    client.channels.fetch(channelId).then(channel => {
+        channel.messages.fetchPinned().then(messages => {
+            // unpin each message
+            messages.forEach(message => {
+                message.unpin();
+            });
+        });
     });
+
 }
 
 export async function promptOllama(prompt, prepend, append) {
@@ -72,6 +76,26 @@ export function splitTextIntoChunks(text, maxLength) {
 }
 
 
+export function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+export function quickEmbed(title, description, color, image = null) {
+
+    const embed = new EmbedBuilder()
+        .setTitle(title)
+        .setDescription(description)
+        .setColor(color);
+
+    if (image) {
+        embed.setImage("attachment://" + image);
+    }
+
+    // message.channel.send({ embeds: [embed] });
+
+    return embed;
+
+}
 
 export async function showFactions(message, config) {
 

@@ -3,7 +3,7 @@ import { Client, GatewayIntentBits, Partials, EmbedBuilder, AttachmentBuilder, B
 import { ActionRowBuilder, ButtonBuilder } from 'discord.js';   // voting
 import { commands, setupCommands } from './commands.mjs';
 import { initiateVote, handleInteractionCreate, getResults, distributeCredits } from './voting.mjs';
-import { generateUUID, showFactions, promptOllama, removeCommandPrefix, summarize, loadFromJSON, saveToJSON, splitTextIntoChunks, unpinAllMessages } from './helpers.mjs';
+import { generateUUID, showFactions, promptOllama, removeCommandPrefix, summarize, loadFromJSON, saveToJSON, splitTextIntoChunks, unpinAllMessages, quickEmbed, capitalize } from './helpers.mjs';
 import { RateLimiter } from 'discord.js-rate-limiter';
 import { setupCronJobs } from './cronJobs.mjs';
 
@@ -549,12 +549,14 @@ async function storyUpdate(message) {
 
 }
 
-async function generateDispatch(message) {
+async function generateDispatch() {
 
     // read from dispatch-next.json as JSON
     let dispatch = loadFromJSON(`${config.dataFolder}/dispatch-next.json`);
     // save dispatch to dispatch-current.json
     saveToJSON(`${config.dataFolder}/dispatch-current.json`, dispatch);
+
+    //console.log(dispatch);
 
     const uuid = generateUUID(dispatch.text);
 
@@ -562,7 +564,7 @@ async function generateDispatch(message) {
 
     // check if this dispatch is alreay in history
     if (uuid in history) {
-        message.reply('This dispatch has already been sent.');
+        console.log('This dispatch has already been sent.');
         return;
     }
 
@@ -577,41 +579,57 @@ async function generateDispatch(message) {
     game.lastDispatch = Date.now();
     saveToJSON(`${config.dataFolder}/game.json`, game);
 
-    displayDispatch(message, dispatch);
+    displayDispatch(dispatch);
 
 }
 
-function displayDispatch(message, dispatch) {
+
+
+function displayDispatch(dispatch) {
+    // console.log(dispatch);
     // create a new embed
-    const embed = new EmbedBuilder()
-        // set color to #55ff55 if dispatch.type is opportunity, or #ff5555 if dispatch.type is crisis
-        .setColor(dispatch.type === 'opportunity' ? 0x55ff55 : 0xff5555)
-        .setTitle('DISPATCH')
-        .setDescription(dispatch.type);
-    message.channel.send({ embeds: [embed] });
+    // const embed = new EmbedBuilder()
+    //     // set color to #55ff55 if dispatch.type is opportunity, or #ff5555 if dispatch.type is crisis
+    //     .setColor(dispatch.type === 'opportunity' ? 0x55ff55 : 0xff5555)
+    //     .setTitle('DISPATCH')
+    //     .setDescription(dispatch.type);
+    // message.channel.send({ embeds: [embed] });
+
+    // color is green for opportunity, red for crisis
+    const color = dispatch.type === 'opportunity' ? 0x55ff55 : 0xff5555;
+
+    const embed = quickEmbed('DISPATCH', dispatch.type, color);
+    // message.channel.send({ embeds: [embed] });
+    client.channels.cache.get(config.CHANNEL_ID).send({ embeds: [embed] });
 
     const dispatchImage = new AttachmentBuilder(`${config.dispatchFolder}/${dispatch.image}`).setName("event.jpg");
+
     // send image to channel
-    message.channel.send({ files: [dispatchImage] });
+    // message.channel.send({ files: [dispatchImage] });
+    client.channels.cache.get(config.CHANNEL_ID).send({ files: [dispatchImage] });
 
     // unpin previous messages
-    unpinAllMessages(message);
+    unpinAllMessages(client, config.CHANNEL_ID);
 
-    // send messages to channel and pin
-    message.channel.send(config.dispatchHeader).then(sentMessage => {
-        sentMessage.pin();
-    });
 
-    message.channel.send(dispatch.text).then(sentMessage => {
-        sentMessage.pin();
-    });
+    // Create an array to store all promises
+    const promises = [];
 
-    message.channel.send(config.dispatchInstructions).then(sentMessage => {
-        sentMessage.pin();
-    });
+    // Send the messages and push the promises to the array
+    promises.push(client.channels.cache.get(config.CHANNEL_ID).send(config.dispatchHeader));
+    promises.push(client.channels.cache.get(config.CHANNEL_ID).send(dispatch.text));
+    promises.push(client.channels.cache.get(config.CHANNEL_ID).send(config.dispatchInstructions));
+
+    // Wait for all promises to resolve
+    Promise.all(promises)
+        .then(messages => {
+            // Pin all messages
+            messages.forEach(sentMessage => sentMessage.pin());
+        })
+        .catch(error => {
+            console.error('Error pinning messages:', error);
+        });
 }
-
-
 
 function isPlayerAdmin(discordId) {
     const player = players.find(p => p.discordId === discordId);
@@ -626,7 +644,6 @@ function adminCommand(message) {
 
     switch (command) {
         case 'dispatch':
-            generateDispatch(message);
             changeState('proposal');
             break;
         case 'proposal':
@@ -643,6 +660,13 @@ function adminCommand(message) {
             break;
         case 'sendImage':
             sendImage(message, image);
+            break;
+        case 'generateDispatch':
+            generateDispatch();
+            break;
+        case 'displayDispatch':
+            let dispatch = loadFromJSON(`${config.dataFolder}/dispatch-next.json`);
+            displayDispatch(dispatch);
             break;
 
         case 'echo':
@@ -683,13 +707,32 @@ function sendImage(message, image) {
 }
 
 async function changeState(newState) {
+
     game.state = newState;
     saveToJSON(`${config.dataFolder}/game.json`, game);
+
+    let description = "";
+
+    if (newState === 'proposal') {
+        generateDispatch();
+        description = "submit your proposals now";
+    }
+    if (newState === 'voting') {
+        description = "voting begins now";
+    }
+    if (newState === 'results') {
+        description = "voting has ended";
+    }
 
     // announce to channel as an embed with image
     const image = new AttachmentBuilder(`${config.imageFolder}/${newState}.jpg`).setName("state.jpg");
 
-    let description = config.stateTexts[newState];
+    // message.channel.send({ embeds: [quickEmbed(capitalize(newState), description, 0x5555ff, image)] });
+    const embed = quickEmbed(capitalize(newState), description, 0x5555ff, image.name);
+    client.channels.cache.get(config.CHANNEL_ID).send({ embeds: [embed] });
+
+    description = config.stateTexts[newState];
+    client.channels.cache.get(config.CHANNEL_ID).send(description);
 
     if (newState === 'results') {
 
@@ -700,13 +743,13 @@ async function changeState(newState) {
 
     }
 
-    const embed = new EmbedBuilder()
-        .setTitle(newState.toUpperCase())
-        .setDescription(description)
-        .setImage("attachment://state.jpg")
-        .setColor(0xFF00FF);
+    // const embed = new EmbedBuilder()
+    //     .setTitle(newState.toUpperCase())
+    //     .setDescription(description)
+    //     .setImage("attachment://state.jpg")
+    //     .setColor(0xFF00FF);
 
-    client.channels.cache.get(config.CHANNEL_ID).send({ embeds: [embed], files: [image] });
+    // client.channels.cache.get(config.CHANNEL_ID).send({ embeds: [embed], files: [image] });
 
 }
 
