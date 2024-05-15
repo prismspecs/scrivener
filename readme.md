@@ -21,6 +21,9 @@ npm install
 ```
 Make sure to add the .env file which includes the bot key
 
+## Automatically load scrivener on boot
+...
+
 ## Run Local
 
 ```bash
@@ -33,7 +36,7 @@ node index.mjs
 
 ## Run Remote
 
-This is not necessary if ollama is running as a service:
+This is not necessary if ollama is running as a service (which it should be by default):
 ```bash
 ssh vision@192.168.0.136
 cd weird-economies
