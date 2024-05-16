@@ -6,6 +6,7 @@ import { initiateVote, handleInteractionCreate, getResults, distributeCredits } 
 import { generateUUID, showFactions, promptOllama, removeCommandPrefix, summarize, loadFromJSON, saveToJSON, splitTextIntoChunks, unpinAllMessages, quickEmbed, capitalize } from './helpers.mjs';
 import { RateLimiter } from 'discord.js-rate-limiter';
 import { setupCronJobs } from './cronJobs.mjs';
+import DiscordFormatter from './discordFormatter.mjs';
 
 let manualMode = false;
 
@@ -101,7 +102,6 @@ client.on('messageCreate', async (message) => {
 
         // if message begins with "!"
         if (message.content.startsWith('!')) {
-
             // check rate limit and return if the user is sending messages too quickly
             if (rateLimiter.take(message.author.id)) {
                 message.reply('You are sending messages too quickly.');
@@ -111,128 +111,99 @@ client.on('messageCreate', async (message) => {
             // log the message content noting the user, plus a new line character
             console.log(`Message from ${message.member.displayName}: ${message.content}\n`);
 
+            // Extract command from message content
+            const command = message.content.split(' ')[0];
 
-            // check message !command prefix
-            if (message.content.startsWith('!generate')) {
-                // generateTextTest(message);
-            }
-
-            else if (message.content.startsWith('!howto')) {
-                const welcomeMessage = "Some helpful commands:\n\n";
-                const commandListString = commandList.join('\n');
-                //message.channel.send(`${welcomeMessage}${commandListString}\n\nGood luck!`);
-                message.reply({ content: `${welcomeMessage}${commandListString}\n\nGood luck!`, ephemeral: true });
-            }
-
-            else if (message.content.startsWith('!factions')) {
-                showFactions(message, config);
-            }
-
-            else if (message.content.startsWith('!propose')) {
-                if (game.state !== 'proposal') {
-                    message.reply('Proposals are not allowed at this time. Please wait for the next dispatch.');
-                    return;
-                }
-
-                propose(message);
-
-            }
-
-            if (message.content.startsWith('!proposals')) {
-                // list all current proposals
-                const proposals = loadFromJSON(`${config.dataFolder}/proposals.json`);
-
-                //console.log(proposals);
-
-                // send message to channel
-                message.channel.send('The proposals which have been drafted are as follows:');
-
-                // let proposalList = 'Here are the proposals drafted so far:\n\n';
-                for (let proposal in proposals) {
-
-                    // create embed
-                    // proposalList += `**${proposals[proposal].proposerName}**:\n`;
-                    // proposalList += `${proposals[proposal].text}\n\n`;
-                    const embed = new EmbedBuilder()
-                        .setColor(0xFF553d)
-                        .setTitle(proposals[proposal].proposerName)
-                        .setDescription(proposals[proposal].text + ", **current votes: " + proposals[proposal].votes + "**");
-                    // .setFooter("Votes: " + proposals[proposal].votes);
-
-                    message.channel.send({ embeds: [embed] });
-                }
-
-            }
-
-            else if (message.content.startsWith('!vote')) {
-
-                if (game.state !== 'voting') {
-                    message.reply('Voting is not allowed at this time. Please wait until the proposal period is over.');
-                    return;
-                }
-
-                initiateVote(message);
-                client.on('interactionCreate', handleInteractionCreate);
-
-            }
-            else if (message.content.startsWith('!info')) {
-                let username = message.member.displayName;
-                // get balance from players array
-                let myBalance = players.find(player => player.discordId === message.author.id).balance;
-                let myFaction = players.find(player => player.discordId === message.author.id).faction;
-                // reply with balance and faction
-                message.reply(`${username}, you have ${myBalance} ${config.currency}. You are a member of the ${myFaction} faction.`);
-            }
-            else if (message.content.startsWith('!dispatch')) {
-                showDispatch(message);
-            }
-            else if (message.content.startsWith('!advice')) {
-                // is there a word after !advice?
-                let factionName = message.content.split(' ')[1];
-
-                //console.log(factionName);
-
-                // get rid of any extra characters in the faction name
-                if (factionName) {
-                    factionName = factionName.replace(/[^a-zA-Z]/g, '');
-                }
-
-                // if there is a word after !advice, use that as the faction name
-                if (factionName) {
-                    switch (factionName) {
-                        case "marxists":
-                            factionName = "Forever Marxists";
-                            break;
-                        case "progressives":
-                            factionName = "Progressive Deep State";
-                            break;
-                        case "anarchists":
-                            factionName = "Anarcho-Syndicalists";
-                            break;
-                        case "monads":
-                            factionName = "Beyond-Us Monadists";
-                            break;
-                        case "eschatologists":
-                            factionName = "Postcapitalist Eschatologists";
-                            break;
+            // Switch statement to handle different commands
+            switch (command) {
+                case '!generate':
+                    // generateTextTest(message);
+                    break;
+                case '!howto':
+                    const welcomeMessage = "Some helpful commands:\n\n";
+                    const commandListString = commandList.join('\n');
+                    message.reply({ content: `${welcomeMessage}${commandListString}\n\nGood luck!`, ephemeral: true });
+                    break;
+                case '!factions':
+                    showFactions(message, config);
+                    break;
+                case '!propose':
+                    if (game.state !== 'proposal') {
+                        message.reply('Proposals are not allowed at this time. Please wait for the next dispatch.');
+                        break;
                     }
-                    advice(message, factionName);
-                } else {
-                    advice(message);
-                }
-            }
-            else if (message.content.startsWith('!join')) {
-                joinGame(message);
-            } else if (message.content.startsWith('!admin')) {
-                if (isPlayerAdmin(message.author.id)) {
-                    adminCommand(message);
-                }
-            } else {
-                // if the message begins with ! but is not a recognized command
-                message.reply('This is not a recognized command. Please type !howto for a list of commands.');
-
+                    propose(message);
+                    break;
+                case '!proposals':
+                    const proposals = loadFromJSON(`${config.dataFolder}/proposals.json`);
+                    message.channel.send('The proposals which have been drafted are as follows:');
+                    for (let proposal in proposals) {
+                        const embed = new EmbedBuilder()
+                            .setColor(0xFF553d)
+                            .setTitle(proposals[proposal].proposerName)
+                            .setDescription(`${proposals[proposal].text}, **current votes: ${proposals[proposal].votes}**`);
+                        message.channel.send({ embeds: [embed] });
+                    }
+                    break;
+                case '!vote':
+                    if (game.state !== 'voting') {
+                        message.reply('Voting is not allowed at this time. Please wait until the proposal period is over.');
+                        break;
+                    }
+                    initiateVote(message);
+                    client.on('interactionCreate', handleInteractionCreate);
+                    break;
+                case '!info':
+                    let username = message.member.displayName;
+                    let myBalance = players.find(player => player.discordId === message.author.id).balance;
+                    let myFaction = players.find(player => player.discordId === message.author.id).faction;
+                    message.reply(`${username}, you have ${myBalance} ${config.currency}. You are a member of the ${myFaction} faction.`);
+                    break;
+                case '!dispatch':
+                    showDispatch(message);
+                    break;
+                case '!advice':
+                    let factionName = message.content.split(' ')[1];
+                    if (factionName) {
+                        factionName = factionName.replace(/[^a-zA-Z]/g, '');
+                    }
+                    if (factionName) {
+                        switch (factionName) {
+                            case "marxists":
+                                factionName = "Forever Marxists";
+                                break;
+                            case "progressives":
+                                factionName = "Progressive Deep State";
+                                break;
+                            case "anarchists":
+                                factionName = "Anarcho-Syndicalists";
+                                break;
+                            case "monads":
+                                factionName = "Beyond-Us Monadists";
+                                break;
+                            case "eschatologists":
+                                factionName = "Postcapitalist Eschatologists";
+                                break;
+                        }
+                        advice(message, factionName);
+                    } else {
+                        advice(message);
+                    }
+                    break;
+                case '!join':
+                    joinGame(message);
+                    break;
+                case '!admin':
+                    if (isPlayerAdmin(message.author.id)) {
+                        adminCommand(message);
+                    }
+                    break;
+                default:
+                    message.reply('This is not a recognized command. Please type !howto for a list of commands.');
+                    break;
             }
         }
+
     }
 });
 
@@ -390,7 +361,7 @@ async function propose(message) {
     // check if the player is in the game
     if (!players.find(player => player.discordId === message.author.id)) {
         message.reply({
-            content: 'You are not in the game. Only players can propose ideas.',
+            content: 'You are not in the game. Only players can propose ideas. Join with **!join**.',
             ephemeral: true
         });
         return;
@@ -409,12 +380,12 @@ async function propose(message) {
     proposals = loadFromJSON(`${config.dataFolder}/proposals.json`);
 
     // remove the prefix from the message
-    let newMessage = removeCommandPrefix(message.content);
+    let proposal = removeCommandPrefix(message.content);
 
     // add to proposals.json
-    const uuid = generateUUID(newMessage);
+    const uuid = generateUUID(proposal);
     proposals[uuid] = {
-        text: newMessage,
+        text: proposal,
         proposer: message.author.id,
         proposerName: message.member.displayName,
         votes: 0,
@@ -427,24 +398,30 @@ async function propose(message) {
     // deduct the cost from the user's balance
     players.find(player => player.discordId === message.author.id).balance -= config.proposalCost;
 
+    let username = message.member.displayName;
+
     // delete the original message from chat
     message.delete();
 
     // message to channel
-    // let username = message.member.displayName;
-    // message.channel.send(`${username} has proposed: ${newMessage}`);
+    // message.channel.send(`${username} has proposed: ${proposal}`);
 
     // message to channel in an embed
-    const embed = new EmbedBuilder()
-        .setColor(0xFF553d)
-        .setTitle('New Proposal')
-        .setDescription(newMessage)
-        .setFooter(`Proposed by ${username}`);
+    // const embed = new EmbedBuilder()
+    //     .setColor(0xFF553d)
+    //     .setTitle('New Proposal')
+    //     .setDescription(proposal)
+    //     .setFooter(`Proposed by ${username}`);
 
-    message.channel.send({ embeds: [embed] });
+    // message.channel.send({ embeds: [embed] });
 
+    const embed = quickEmbed('New Proposal', username, 0xFF553d);
+    client.channels.cache.get(config.CHANNEL_ID).send({ embeds: [embed] });
 
+    const df = new DiscordFormatter()
+        .addText(proposal);
 
+    client.channels.cache.get(config.CHANNEL_ID).send(df.string());
 
 }
 
