@@ -1,5 +1,9 @@
 [Jump to Scrivener project website](https://prismspecs.github.io/scrivener/)
 
+![demo gameplay](docs/images/gameplay-proposal1.png)
+
+Scrivener is a game about co-authoring the future. Played on Discord, participants respond to crises and opportunities that happen in a near-future which has been gripped by the emerging far-right. A fictional Decentralizd Autonomous Organization exists to challenge this new world order, and through each decision the narrative is co-written by the players.
+
 ## Ollama setup
 
 I had trouble with the default port, hence changing it to 8888, but whatever works. Oddly enough, I still had to make the request to the default port. I'm using the mistral model.

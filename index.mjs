@@ -5,7 +5,7 @@ import { commands, setupCommands } from './commands.mjs';
 import { initiateVote, handleInteractionCreate, getResults, distributeCredits } from './voting.mjs';
 import { generateUUID, showFactions, promptOllama, removeCommandPrefix, summarize, loadFromJSON, saveToJSON, splitTextIntoChunks, unpinAllMessages, quickEmbed, capitalize } from './helpers.mjs';
 import { RateLimiter } from 'discord.js-rate-limiter';
-import { setupCronJobs } from './cronJobs.mjs';
+import { setupSchedule } from './scheduler.mjs';
 import DiscordFormatter from './discordFormatter.mjs';
 
 let manualMode = false;
@@ -73,7 +73,7 @@ client.once('ready', () => {
     //channel.send('Scrivener is now online.');
 
     // task scheduling
-    setupCronJobs(changeState, manualMode);
+    setupSchedule(changeState, manualMode);
 
 });
 
@@ -135,15 +135,7 @@ client.on('messageCreate', async (message) => {
                     propose(message);
                     break;
                 case '!proposals':
-                    const proposals = loadFromJSON(`${config.dataFolder}/proposals.json`);
-                    message.channel.send('The proposals which have been drafted are as follows:');
-                    for (let proposal in proposals) {
-                        const embed = new EmbedBuilder()
-                            .setColor(0xFF553d)
-                            .setTitle(proposals[proposal].proposerName)
-                            .setDescription(`${proposals[proposal].text}, **current votes: ${proposals[proposal].votes}**`);
-                        message.channel.send({ embeds: [embed] });
-                    }
+                    listProposals();
                     break;
                 case '!vote':
                     if (game.state !== 'voting') {
@@ -274,6 +266,29 @@ function joinGame(message) {
 
 }
 
+async function listProposals() {
+
+    const proposals = loadFromJSON(`${config.dataFolder}/proposals.json`);
+
+    const embed = quickEmbed('Proposals', 'The proposals which have been drafted are as follows:', 0xFFFFFF);
+    client.channels.cache.get(config.CHANNEL_ID).send({ embeds: [embed] });
+
+    for (let proposal in proposals) {
+
+        // make sure proposal text is fewer than 2000 characters
+        if (proposals[proposal].text.length > 1900) {
+            proposals[proposal].text = proposals[proposal].text.substring(0, 1900) + '...';
+        }
+
+        const df = new DiscordFormatter()
+            .addHeader(proposals[proposal].proposerName + "'s proposal")
+            .addText(proposals[proposal].text)
+            .addLineBreak()
+            .addText("*current votes: " + proposals[proposal].votes + "*");
+
+        client.channels.cache.get(config.CHANNEL_ID).send(df.string());
+    }
+}
 
 async function advice(message, factionName) {
 
@@ -343,6 +358,15 @@ async function propose(message) {
         return;
     }
 
+    // if the message is over 2000 characters
+    if (message.content.length > 2000) {
+        message.reply({
+            content: 'Proposals must be 2000 characters or fewer. Please reduce the length of your proposal and try again.',
+            ephemeral: true
+        });
+        return;
+    }
+
     // get lastDispatch time from game.json
     game = loadFromJSON(`${config.dataFolder}/game.json`);
 
@@ -403,18 +427,6 @@ async function propose(message) {
     // delete the original message from chat
     message.delete();
 
-    // message to channel
-    // message.channel.send(`${username} has proposed: ${proposal}`);
-
-    // message to channel in an embed
-    // const embed = new EmbedBuilder()
-    //     .setColor(0xFF553d)
-    //     .setTitle('New Proposal')
-    //     .setDescription(proposal)
-    //     .setFooter(`Proposed by ${username}`);
-
-    // message.channel.send({ embeds: [embed] });
-
     const embed = quickEmbed('New Proposal', username, 0xFF553d);
     client.channels.cache.get(config.CHANNEL_ID).send({ embeds: [embed] });
 
@@ -425,31 +437,6 @@ async function propose(message) {
 
 }
 
-// function to generate text
-// async function generateTextTest(message) {
-
-//     // remove any prefix for this message, any word that begins with !
-//     let newMessage = removeCommandPrefix(message.content);
-
-//     // check if the message is not from a bot to avoid an infinite loop
-//     if (!message.author.bot) {
-//         try {
-
-//             const response = await promptOllama(newMessage, "", config.promptAppend);
-
-//             // console.log(response);
-
-//             // send the content back to the Discord channel
-//             message.reply(`Model Response: ${response}`);
-
-//             message.reply("Summary: " + await summarize(response));
-
-//         } catch (error) {
-//             console.error('Error making HTTP request:', error.message);
-//             message.reply('An error occurred while processing your request.');
-//         }
-//     }
-// }
 
 async function showDispatch(message) {
     // get the latest dispatch from history-of-events.json using pop (make this shift() if pop returns the wrong one...)
@@ -645,7 +632,6 @@ function adminCommand(message) {
             let dispatch = loadFromJSON(`${config.dataFolder}/dispatch-next.json`);
             displayDispatch(dispatch);
             break;
-
         case 'echo':
             // send message to the main channel of everything after !admin echo
             const echoMessage = message.content.split(' ').slice(2).join(' ');
@@ -660,6 +646,10 @@ function adminCommand(message) {
                 .setDescription(embedMessage);
             client.channels.cache.get(config.CHANNEL_ID).send({ embeds: [embed] });
             break;
+        case 'announce':
+            const text = message.content.split(' ').slice(2).join(' ');
+            announce(text);
+            break;
         case 'toggle-manual':
             manualMode = !manualMode;
             message.reply(`Manual mode set to: ${manualMode}`);
@@ -668,13 +658,11 @@ function adminCommand(message) {
             message.reply('Invalid admin command.');
     }
 
-    // set the game state to the message content
-    // game.state = message.content.split(' ')[1];
+}
 
-    // message to channel
-    // message.channel.send(`Game state set to: ${game.state}`);
-    // DM the user
-
+function announce(text) {
+    const announceEmbed = quickEmbed("Announcement", text, 0xFFFFFF);
+    client.channels.cache.get(config.CHANNEL_ID).send({ embeds: [announceEmbed] });
 }
 
 // function to send an image
@@ -719,15 +707,6 @@ async function changeState(newState) {
         description += "\n\nThe proposed action will be underway immediately... time will tell if it was the right choice. We should know within a day.";
 
     }
-
-    // const embed = new EmbedBuilder()
-    //     .setTitle(newState.toUpperCase())
-    //     .setDescription(description)
-    //     .setImage("attachment://state.jpg")
-    //     .setColor(0xFF00FF);
-
-    // client.channels.cache.get(config.CHANNEL_ID).send({ embeds: [embed], files: [image] });
-
 }
 
 client.login(process.env.DISCORD_TOKEN);

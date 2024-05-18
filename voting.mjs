@@ -42,11 +42,13 @@ export async function initiateVote(message) {
 
     for (let proposal in proposals) {
 
+        const shortenedText = proposals[proposal].text.length > 1900 ? proposals[proposal].text.substring(0, 1900) + "..." : proposals[proposal].text;
+
         // first send the name of the proposer
         const proposer = players.find(p => p.discordId === proposals[proposal].proposer);
         let voteSummary = `**${proposer.displayName}**:\n`;
-        voteSummary += `${proposals[proposal].text}\n`;
-        voteSummary += `Current votes: ${proposals[proposal].votes}\n`;
+        voteSummary += shortenedText;
+        voteSummary += `\nCurrent votes: ${proposals[proposal].votes}\n`;
         voteSummary += "----------------\n"
 
         // send as DM to user

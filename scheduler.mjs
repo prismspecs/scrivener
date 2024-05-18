@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 
-export function setupCronJobs(changeState, manualMode) {
+export function setupSchedule(changeState, manualMode) {
     // cron job for every Monday at 6pm CET
     cron.schedule('0 18 * * 1', () => {
         // change state to voting
@@ -16,10 +16,18 @@ export function setupCronJobs(changeState, manualMode) {
         }
     });
     // cron job for every Wednesday at 20:40 CET
-    cron.schedule('36 21 * * 3', () => {
+    cron.schedule('0 18 * * 3', () => {
         // change state to proposal
         if (!manualMode) {
             changeState('proposal');
+        }
+    });
+
+    // cron job for Saturday at 18:00 CET
+    cron.schedule('0 18 * * 6', () => {
+        // change state to voting
+        if (!manualMode) {
+            changeState('results');
         }
     });
 }

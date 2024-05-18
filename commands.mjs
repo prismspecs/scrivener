@@ -2,8 +2,8 @@ import config from './data/config.json' assert { type: 'json' };
 
 const commands = [
     {
-        name: "ping",
-        description: "Replies with Pong!"
+        name: "test",
+        description: "Replies with test!"
     }
 ];
 
@@ -11,14 +11,8 @@ async function setupCommands(client) {
 
     const guildId = config.SERVER_ID;
 
-    // Define the data for the ping command
-    const pingCommandData = {
-        name: 'ping',
-        description: 'Replies with Pong!'
-    };
-
     // Register the command
-    await client.guilds.cache.get(guildId)?.commands.create(pingCommandData);
+    await client.guilds.cache.get(guildId)?.commands.create(commands[0]);
 
     // Set up the interaction listener
     client.on('interactionCreate', async (interaction) => {
@@ -29,12 +23,12 @@ async function setupCommands(client) {
 
         const { commandName } = interaction;
 
-        if (commandName === 'ping') {
-            await interaction.reply('Pong!');
+        if (commandName === 'test') {
+            await interaction.reply('test!');
         }
     });
 
     console.log('Setting up commands');
 }
 
-export { commands, setupCommands };
+export { setupCommands, commands };
