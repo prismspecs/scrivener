@@ -24,7 +24,11 @@ export function unpinAllMessages(client, channelId) {
             });
         });
     });
+}
 
+export function announce(text) {
+    const announceEmbed = quickEmbed("Announcement", text, 0xFFFFFF);
+    client.channels.cache.get(config.CHANNEL_ID).send({ embeds: [announceEmbed] });
 }
 
 export async function promptOllama(prompt, prepend, append) {

@@ -3,7 +3,7 @@ import { Client, GatewayIntentBits, Partials, EmbedBuilder, AttachmentBuilder, B
 import { ActionRowBuilder, ButtonBuilder } from 'discord.js';   // voting
 import { commands, setupCommands } from './commands.mjs';
 import { initiateVote, handleInteractionCreate, getResults, distributeCredits } from './voting.mjs';
-import { generateUUID, showFactions, promptOllama, removeCommandPrefix, summarize, loadFromJSON, saveToJSON, splitTextIntoChunks, unpinAllMessages, quickEmbed, capitalize } from './helpers.mjs';
+import { generateUUID, showFactions, promptOllama, removeCommandPrefix, summarize, loadFromJSON, saveToJSON, splitTextIntoChunks, unpinAllMessages, quickEmbed, capitalize, announce } from './helpers.mjs';
 import { RateLimiter } from 'discord.js-rate-limiter';
 import { setupSchedule } from './scheduler.mjs';
 import DiscordFormatter from './discordFormatter.mjs';
@@ -474,6 +474,9 @@ async function storyUpdate(message) {
     // break the message into multiple parts because the maximum length of a message is 2000 characters
     const parts = splitTextIntoChunks(storyUpdate.text, 2000);
 
+    const embed = quickEmbed('Story Update', 'the future is being written', 0x5555ff);
+    client.channels.cache.get(config.CHANNEL_ID).send({ embeds: [embed] });
+
     // send each part as a separate message to the main channel
     for (const part of parts) {
         client.channels.cache.get(config.CHANNEL_ID).send(part);
@@ -489,7 +492,7 @@ async function storyUpdate(message) {
     const uuid = generateUUID(first100Characters);
     history = loadFromJSON(`${config.dataFolder}/history-of-events.json`);
 
-    // check if this dispatch is alreay in history
+    // check if this dispatch is already in history
     if (uuid in history) {
         console.log("duplicate story update");
         return;
@@ -575,7 +578,6 @@ function displayDispatch(dispatch) {
     // unpin previous messages
     unpinAllMessages(client, config.CHANNEL_ID);
 
-
     // Create an array to store all promises
     const promises = [];
 
@@ -658,11 +660,6 @@ function adminCommand(message) {
             message.reply('Invalid admin command.');
     }
 
-}
-
-function announce(text) {
-    const announceEmbed = quickEmbed("Announcement", text, 0xFFFFFF);
-    client.channels.cache.get(config.CHANNEL_ID).send({ embeds: [announceEmbed] });
 }
 
 // function to send an image

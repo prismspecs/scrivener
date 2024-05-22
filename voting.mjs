@@ -55,7 +55,6 @@ export async function initiateVote(message) {
         message.author.send(voteSummary);
     }
 
-
     // await message.author.send({ content: 'Please vote for a proposal:', components: rows });
 
     // send it ephemeral as a reply to user
