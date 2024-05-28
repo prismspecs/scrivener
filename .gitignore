@@ -6,6 +6,10 @@ data/players.json
 data/next-dispatch.json
 
 audio/
+video/
+
+convert.md
+output.json
 
 # Logs
 logs
