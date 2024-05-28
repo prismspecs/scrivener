@@ -3,7 +3,7 @@ import { Client, GatewayIntentBits, Partials, EmbedBuilder, AttachmentBuilder, B
 import { ActionRowBuilder, ButtonBuilder } from 'discord.js';   // voting
 import { commands, setupCommands } from './commands.mjs';
 import { initiateVote, handleInteractionCreate, getResults, distributeCredits } from './voting.mjs';
-import { generateUUID, showFactions, promptOllama, removeCommandPrefix, summarize, loadFromJSON, saveToJSON, splitTextIntoChunks, unpinAllMessages, quickEmbed, capitalize, announce } from './helpers.mjs';
+import { generateUUID, showFactions, promptOllama, removeCommandPrefix, summarize, loadFromJSON, saveToJSON, splitTextIntoChunks, unpinAllMessages, quickEmbed, capitalize, announce, loadTextFile } from './helpers.mjs';
 import { RateLimiter } from 'discord.js-rate-limiter';
 import { setupSchedule } from './scheduler.mjs';
 import DiscordFormatter from './discordFormatter.mjs';
@@ -151,6 +151,9 @@ client.on('messageCreate', async (message) => {
                     let myFaction = players.find(player => player.discordId === message.author.id).faction;
                     message.reply(`${username}, you have ${myBalance} ${config.currency}. You are a member of the ${myFaction} faction.`);
                     break;
+                case '!summary':
+                    summary(message);
+                    break;
                 case '!dispatch':
                     showDispatch(message);
                     break;
@@ -264,6 +267,22 @@ function joinGame(message) {
         }
     });
 
+}
+
+async function summary(message) {
+    // load from data/summary.txt text file
+    const summaryText = await loadTextFile(`${config.dataFolder}/summary.txt`);
+
+    // break the message into multiple parts because the maximum length of a message is 2000 characters
+    const parts = splitTextIntoChunks(summaryText, 2000);
+
+    // send each part as a separate DM to the user
+    for (const part of parts) {
+        message.author.send(part);
+    }
+
+    // message to channel
+    client.channels.cache.get(config.CHANNEL_ID).send('*Summary sent to your DMs*');
 }
 
 async function listProposals() {
@@ -650,7 +669,7 @@ function adminCommand(message) {
             break;
         case 'announce':
             const text = message.content.split(' ').slice(2).join(' ');
-            announce(text);
+            announce(client, config.CHANNEL_ID, text);
             break;
         case 'toggle-manual':
             manualMode = !manualMode;
@@ -659,7 +678,6 @@ function adminCommand(message) {
         default:
             message.reply('Invalid admin command.');
     }
-
 }
 
 // function to send an image

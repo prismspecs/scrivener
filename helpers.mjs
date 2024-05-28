@@ -26,9 +26,18 @@ export function unpinAllMessages(client, channelId) {
     });
 }
 
-export function announce(text) {
+export function announce(client, channelID, text) {
     const announceEmbed = quickEmbed("Announcement", text, 0xFFFFFF);
-    client.channels.cache.get(config.CHANNEL_ID).send({ embeds: [announceEmbed] });
+    client.channels.cache.get(channelID).send({ embeds: [announceEmbed] });
+}
+
+export async function loadTextFile(filePath) {
+    try {
+        const data = await fs.promises.readFile(filePath, 'utf8');
+        return data;
+    } catch (err) {
+        console.error(`Error reading from disk: ${err}`);
+    }
 }
 
 export async function promptOllama(prompt, prepend, append) {
@@ -78,7 +87,6 @@ export function splitTextIntoChunks(text, maxLength) {
 
     return chunks;
 }
-
 
 export function capitalize(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);

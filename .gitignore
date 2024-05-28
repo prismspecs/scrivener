@@ -5,6 +5,8 @@
 data/players.json
 data/next-dispatch.json
 
+audio/
+
 # Logs
 logs
 *.log
