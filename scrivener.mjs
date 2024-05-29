@@ -1,14 +1,15 @@
 import dotenv from 'dotenv'
 import { Client, GatewayIntentBits, Partials, EmbedBuilder, AttachmentBuilder, ButtonStyle } from 'discord.js';
 import { ActionRowBuilder, ButtonBuilder } from 'discord.js';   // voting
-import { commands, setupCommands } from './commands.mjs';
 import { initiateVote, handleInteractionCreate, getResults, distributeCredits } from './voting.mjs';
 import { generateUUID, showFactions, promptOllama, removeCommandPrefix, summarize, loadFromJSON, saveToJSON, splitTextIntoChunks, unpinAllMessages, quickEmbed, capitalize, announce, loadTextFile } from './helpers.mjs';
 import { RateLimiter } from 'discord.js-rate-limiter';
 import { setupSchedule } from './scheduler.mjs';
 import DiscordFormatter from './discordFormatter.mjs';
+import fs from 'fs';
 
-let manualMode = false;
+import { REST } from '@discordjs/rest';
+import { Routes } from 'discord-api-types/v9';
 
 // allows 1 command every x seconds
 const rateLimiter = new RateLimiter(1, 2000);
@@ -36,14 +37,39 @@ const client = new Client({
 
 dotenv.config()
 
-// commands (not working atm)
-// from https://cratecode.com/info/discordjs-slash-commands
-setupCommands(client);
+// slash commands (not working)
+const commands = [
+    {
+        name: 'ping',
+        description: 'Replies with Pong!',
+    },
+    {
+        name: 'beep',
+        description: 'Replies with Boop!',
+    }
+];
+const rest = new REST({ version: '9' }).setToken(process.env.DISCORD_TOKEN);
 
+(async () => {
+    try {
+        console.log('Started refreshing application (/) commands.');
+
+        const data = await rest.put(
+            Routes.applicationCommands(config.CLIENT_ID),
+            { body: commands },
+        );
+
+        console.log(`Successfully reloaded ${data.length} application (/) commands.`);
+    } catch (error) {
+        console.error(error);
+    }
+})();
+
+// oldschool commands
 const commandList = [
     '!howto - Get information on how to play the game.',
     '!join - Join the game manually.',
-    '!info - Check your credits and other information.',
+    '!summary - Get a summary of the game so far.',
     '!factions - Get information on the political factions.',
     '!dispatch - Show the current dispatch.',
     '!propose [your proposal] - Propose an idea.',
@@ -53,6 +79,7 @@ const commandList = [
     'visit https://prismspecs.github.io/scrivener/howtoplay.html for more information.'
 ];
 
+let manualMode;
 
 // when the client is ready
 client.once('ready', () => {
@@ -60,7 +87,9 @@ client.once('ready', () => {
     // set avatar
     // client.user.setAvatar('images/we-logo.png');
 
-    console.log('Ready!');
+    manualMode = loadFromJSON(`${config.dataFolder}/game.json`).manualMode;
+
+    console.log(`Ready! Game currently in ${game.state} phase. Manual mode is ${manualMode}.`);
 
     // connect to guild and channel
     const guild = client.guilds.cache.get(config.SERVER_ID);
@@ -73,7 +102,7 @@ client.once('ready', () => {
     //channel.send('Scrivener is now online.');
 
     // task scheduling
-    setupSchedule(changeState, manualMode);
+    setupSchedule(changeState);
 
 });
 
@@ -144,12 +173,6 @@ client.on('messageCreate', async (message) => {
                     }
                     initiateVote(message);
                     client.on('interactionCreate', handleInteractionCreate);
-                    break;
-                case '!info':
-                    let username = message.member.displayName;
-                    let myBalance = players.find(player => player.discordId === message.author.id).balance;
-                    let myFaction = players.find(player => player.discordId === message.author.id).faction;
-                    message.reply(`${username}, you have ${myBalance} ${config.currency}. You are a member of the ${myFaction} faction.`);
                     break;
                 case '!summary':
                     summary(message);
@@ -281,8 +304,14 @@ async function summary(message) {
         message.author.send(part);
     }
 
-    // message to channel
-    client.channels.cache.get(config.CHANNEL_ID).send('*Summary sent to your DMs*');
+    // get the most recent file from video/ directory and send it to the user
+    const files = fs.readdirSync('video/');
+    const video = new AttachmentBuilder(`video/${files[files.length - 1]}`).setName("video.mp4");
+    message.author.send({ files: [video] });
+
+    // send video to channel
+    client.channels.cache.get(config.CHANNEL_ID).send({ files: [video] });
+    client.channels.cache.get(config.CHANNEL_ID).send(`*Full summary text has sent to your DMs, ${message.member.displayName}. Anyone can also view the video summary below.*`);
 }
 
 async function listProposals() {
@@ -337,8 +366,7 @@ async function advice(message, factionName) {
     const history = loadFromJSON(`${config.dataFolder}/history-of-events.json`);
     const latestDispatch = Object.values(history).pop().text;
 
-    console.log(latestDispatch);
-
+    //console.log(latestDispatch);
 
     // check if the message is not from a bot to avoid an infinite loop
     if (!message.author.bot) {
@@ -353,8 +381,11 @@ async function advice(message, factionName) {
                 response = response.substring(0, 1800) + '...';
             }
 
+            // create a new string copy of response but for each new line, put a "> " in front of it
+            response = response.split('\n').map(line => '> ' + line).join('\n');
+
             // send the content back to the Discord channel
-            message.reply(`${faction.name}: ${response}`);
+            message.reply(`${faction.name}:\n\n${response}`);
 
             //message.reply("Summary: " + await summarize(response));
 
@@ -411,13 +442,13 @@ async function propose(message) {
     }
 
     // check if the user has enough balance to propose
-    if (players.find(player => player.discordId === message.author.id).balance < config.proposalCost) {
-        message.reply({
-            content: `You do not have enough ${config.currency} to propose. It costs ${config.proposalCost} ${config.currency} to propose an idea.`,
-            ephemeral: true
-        });
-        return;
-    }
+    // if (players.find(player => player.discordId === message.author.id).balance < config.proposalCost) {
+    //     message.reply({
+    //         content: `You do not have enough ${config.currency} to propose. It costs ${config.proposalCost} ${config.currency} to propose an idea.`,
+    //         ephemeral: true
+    //     });
+    //     return;
+    // }
 
     // load proposals from file
     proposals = loadFromJSON(`${config.dataFolder}/proposals.json`);
@@ -439,7 +470,7 @@ async function propose(message) {
     saveToJSON(`${config.dataFolder}/proposals.json`, proposals);
 
     // deduct the cost from the user's balance
-    players.find(player => player.discordId === message.author.id).balance -= config.proposalCost;
+    // players.find(player => player.discordId === message.author.id).balance -= config.proposalCost;
 
     let username = message.member.displayName;
 
@@ -453,9 +484,7 @@ async function propose(message) {
         .addText(proposal);
 
     client.channels.cache.get(config.CHANNEL_ID).send(df.string());
-
 }
-
 
 async function showDispatch(message) {
     // get the latest dispatch from history-of-events.json using pop (make this shift() if pop returns the wrong one...)
@@ -673,6 +702,9 @@ function adminCommand(message) {
             break;
         case 'toggle-manual':
             manualMode = !manualMode;
+            // save manual mode to game.json
+            game.manualMode = manualMode;
+            saveToJSON(`${config.dataFolder}/game.json`, game);
             message.reply(`Manual mode set to: ${manualMode}`);
             break;
         default:

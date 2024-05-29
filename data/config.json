@@ -23,15 +23,15 @@
     "dispatchFolder": "images/dispatches",
     "gameIcon": "we-logo-small.png",
     "crisisThumbnail": "dispatch-crisis-small.jpg",
-    "proposalCost": 10,
-    "proposalReturn": 20,
-    "startingBalance": 100,
-    "currency": "🪙",
+    "proposalCost": 0,
+    "proposalReturn": 1,
+    "startingBalance": 0,
+    "currency": "✊",
     "dispatchHeader": "# Comrades, something has happened that requires our attention.",
     "dispatchInstructions": "* type !advice to ask members of your faction what they think about the situation\n* type !propose [your proposal here] to propose a plan of action",
     "stateTexts": {
-        "voting": "### Attention comrades!\n\nThe proposal period has ended and now it's time to vote on the proposals that have been submitted. You have 24 hours to cast your vote.\n\n**type !vote** to vote on a proposal. You can view the list of proposals by typing !proposals.\n\nEach vote costs 1 :coin:, but your :coin: will be returned to you if the proposal you voted for is successful. The :coin: from unsuccessful proposals will be put towards the project. You can only vote once, so choose wisely. Once the voting period has ended, the proposal with the most votes will be implemented.",
-        "proposal": "### Attention comrades!\nWe are now entering a proposal period, where you have the opportunity to propose actions in response to the latest dispatch. This period will last for 24 hours (unless otherwise specified), so be sure to submit your proposals before the deadline.\n\n**type !propose [your proposal here]** (without brackets) to propose an action. Proposals will cost 10 :coin:, but if your proposal is successful, your :coin: will be returned to you. Unsuccessful proposal :coin: will be put towards the project.\n\nYour proposal can be as straightforward or as wildly experimental as you'd like. You can even propose to change the rules of the game (within reason). The more creative and innovative your proposal, the more likely it is to capture the imagination of your fellow players and earn their votes. Proposals are limited to one per person per round. If you wish to withdraw your proposal, you can do so with the **!withdraw** command. Once the proposal period has ended, players will then vote.",
-        "results": "### Attention comrades!\n\nThe voting period has ended and the results are in. The proposal with the most votes has been selected and will be implemented. If you voted for the winning proposal, your :coin: will be returned to you. If you voted for an unsuccessful proposal, your :coin: will be put towards the project."
+        "voting": "### Attention comrades!\n\nThe proposal period has ended and now it's time to vote on the proposals that have been submitted. You have 24 hours to cast your vote.\n\n**type !vote** to vote on a proposal. You can view the list of proposals by typing !proposals. You can only vote once, so choose wisely. Once the voting period has ended, the proposal with the most votes will be implemented.",
+        "proposal": "### Attention comrades!\nWe are now entering a proposal period, where you have the opportunity to propose actions in response to the latest dispatch. This period will last for 24 hours (unless otherwise specified), so be sure to submit your proposals before the deadline.\n\n**type !propose [your proposal here]** (without brackets) to propose an action. If your proposal is selected, you earn one ✊.\n\nYour proposal can be as straightforward or as wildly experimental as you'd like. You can even propose to change the rules of the game (within reason). The more creative and innovative your proposal, the more likely it is to capture the imagination of your fellow players and earn their votes. Proposals are limited to one per person per round. If you wish to withdraw your proposal, you can do so with the **!withdraw** command. Once the proposal period has ended, players will then vote.",
+        "results": "### Attention comrades!\n\nThe voting period has ended and the results are in. The proposal with the most votes has been selected and will be implemented. The person who proposed the plan earns one ✊."
     }
 }

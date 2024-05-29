@@ -1,50 +1,58 @@
 import cron from 'node-cron';
 import { announce } from './helpers.mjs';
+import { loadFromJSON } from './helpers.mjs';
+import config from './data/config.json' assert { type: 'json' };
 
-export function setupSchedule(changeState, manualMode) {
+function manualMode() {
+    // load manualMode from game.json
+    const game = loadFromJSON(`${config.dataFolder}/game.json`);
+    return game.manualMode;
+}
+
+export function setupSchedule(changeState) {
 
     // main game
 
     // PROPOSAL every Sunday at 8pm CET
     cron.schedule('0 20 * * 0', () => {
-        if (!manualMode) {
+        if (!manualMode()) {
             changeState('proposal');
         }
     });
     // VOTING every Monday at 9pm CET
     cron.schedule('0 20 * * 1', () => {
-        if (!manualMode) {
+        if (!manualMode()) {
             changeState('voting');
         }
     });
     // RESULTS every Tuesday at 8pm CET
     cron.schedule('0 20 * * 2', () => {
-        if (!manualMode) {
+        if (!manualMode()) {
             changeState('results');
         }
     });
     // PROPOSAL every Wednesday at 8pm CET
     cron.schedule('0 20 * * 3', () => {
-        if (!manualMode) {
+        if (!manualMode()) {
             changeState('proposal');
         }
     });
     // VOTING every Thursday at 8pm CET
     cron.schedule('0 20 * * 4', () => {
-        if (!manualMode) {
+        if (!manualMode()) {
             changeState('voting');
         }
     });
     // RESULTS every Friday at 8pm CET
     cron.schedule('0 20 * * 5', () => {
-        if (!manualMode) {
+        if (!manualMode()) {
             changeState('results');
         }
     });
 
     // reminders
     // Monday
-    if (!manualMode) {
+    if (!manualMode()) {
         cron.schedule('0 8 * * 1', () => {
             announce("You have 12 more hours to submit proposals with **!propose**")
         });

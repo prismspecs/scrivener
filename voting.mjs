@@ -63,6 +63,15 @@ export async function initiateVote(message) {
 }
 export async function handleInteractionCreate(interaction) {
 
+    // if it is a slash command
+    if (interaction.isCommand()) {
+        const { commandName } = interaction;
+
+        if (commandName === 'ping') {
+            await interaction.reply('Pong!');
+        }
+    }
+
     const proposals = loadFromJSON(`${config.dataFolder}/proposals.json`);
 
     if (!interaction.isButton()) return;
@@ -172,41 +181,13 @@ export async function distributeCredits(client, config, topProposal, numProposal
     // find player that matches winningProposer.discordId and add the credits
     const player = await players.find(p => p.discordId === topProposal.proposer);
 
-    responseString += `The people have agreed on ${player.displayName}'s proposal, so ${config.proposalReturn}${config.currency} have been redistributed to their account.\n`;
-
-    if (numProposals > 2) {
-        const creditsDispersed = config.proposalCost * numProposals - config.proposalReturn;
-
-        responseString += `The remaining ${creditsDispersed}${config.currency} spent on proposals has been invested in the selected proposal.\n`;
-
-        if (player) {
-            player.balance += config.proposalReturn;
-        }
-
-    }
-    else if (numProposals == 1) {
-
-        responseString += `No ${config.currency} remains, since there was only one proposal. The credits have been returned to the proposer.\n`;
-
-        // send the credits to the user
-        if (player) {
-            player.balance += config.proposalCost;
-        }
-    }
-    else if (numProposals == 0) {
-
-        responseString += `No proposals were made, so the ${config.currency} has been returned to the proposer.\n`;
-        // send the credits to the user
-        if (player) {
-            player.balance += config.proposalCost;
-        }
-    }
+    responseString += `The people have agreed on ${player.displayName}'s proposal, earning them ${config.proposalReward} ${config.currency}.\n`;
+    player.balance += config.proposalReward;
 
     // write the updated players to the file
     saveToJSON(`${config.dataFolder}/players.json`, players);
 
     return responseString;
-
 }
 
 export async function resetProposals(proposals) {
