@@ -52,7 +52,8 @@
         .command {
             background-color: #000;
             color: #fff;
-            padding: 2px;
+            padding: 2px 5px;
+            border-radius: 3px;
         }
 
         @media (max-width: 800px) {
@@ -66,94 +67,79 @@
 <body>
     <div class="container">
 
-        <h1>how to play</h1>
+        <h1>How to Play</h1>
 
         <p>The game takes place on the Discord server, in the #scrivener-game channel.</p>
 
-        <p>To begin, type !join
-        </p>
-        <img src="images/join.png" alt="">
+        <p>To begin, type <span class="command">!join</span></p>
+        <img src="images/join.png" alt="Join Command Example">
 
-        <p>To get a list of commands you can type !howto</p>
-        <img src="images/howto.png" alt="">
+        <p>For a list of commands, type <span class="command">!howto</span></p>
+        <img src="images/howto.png" alt="Howto Command Example">
 
-        <p>The game has two complete cycles per week. This means that each Sunday and Wednesday there will be a
-            Dispatch, which is either a crisis or an opportunity to which you must respond. This begins the
-            <strong>Proposals</strong> phase during which you can make proposals on how to respond. 24 hours later (for
-            example, Monday at 6pm CET) will begin the <strong>Voting</strong> phase during which you can vote on the
-            proposals which have been made by the players. This lasts for 24 hours until the next day (for ex, Tuesday
-            at 6pm CET), when the votes will be tallied and the winning proposal is announced. Hours later, the game
-            will make a determination as to what happens in the game world and informs the players. Whatever happens
-            will become part of the story moving forward, so any world-changing proposals will be taken into
-            consideration; if you take occupy the UN headquarters, this will have repercussions moving forward.
-        </p>
+        <p>The game typically has two complete cycles per week. For example, each Sunday and Wednesday might have a
+            <strong>Dispatch</strong>, which is either a crisis or an opportunity that you must respond to. This begins
+            the <strong>Proposals</strong> phase, during which you can make proposals on how to respond. 24-48 hours
+            later, the <strong>Voting</strong> phase begins, where you can vote on the proposals made by players. After
+            another 24-48 hours, the votes are tallied and the winning proposal is announced. The outcome is integrated
+            into the ongoing story, impacting future events.</p>
 
-        <h2>The schedule operates as follows</h2>
+        <!-- <h2>Weekly Schedule</h2>
 
         <ul>
-            <li>Sunday 6pm CET: crisis/opportunity</li>
+            <li>Sunday 6pm CET: Crisis/Opportunity Dispatch</li>
             <li>Sunday 6pm CET: Proposals (24 hours)</li>
-            <li>Monday 6pm CET: Voting</li>
+            <li>Monday 6pm CET: Voting (24 hours)</li>
             <li>Tuesday 6pm CET: Results</li>
-            <li>Wednesday 6pm CET: dispatch</li>
-            <li>Wednesday 6pm CET: Proposals begin</li>
-            <li>Thursday 6pm CET: Voting begins</li>
+            <li>Wednesday 6pm CET: Dispatch</li>
+            <li>Wednesday 6pm CET: Proposals (24 hours)</li>
+            <li>Thursday 6pm CET: Voting (24 hours)</li>
             <li>Friday 6pm CET: Results</li>
-        </ul>
+        </ul> -->
 
         <h2>Dispatches</h2>
 
-        <p>Dispatches are the starting point for each cycle. They are either a crisis or an opportunity. A crisis is a
-            negative event that requires a response, such as a natural disaster. It will look like this:</p>
+        <p>Dispatches are the starting point for each cycle. They can be a crisis or an opportunity, requiring a
+            response. For example:</p>
+        <img src="images/dispatch.png" alt="Dispatch Example">
 
-        <img src="images/dispatch.png" alt="">
+        <h2>Proposal Phase</h2>
 
-        <p>Each <strong>Dispatch</strong> is immediately followed by a <strong>Proposals</strong> phase.</p>
+        <p>The <strong>Proposal</strong> phase begins with an image like this:</p>
+        <img src="images/proposal-phase.png" alt="Proposal Phase Example">
 
-        <h2>Proposal phase</h2>
+        <p>During this phase, type <span class="command">!propose</span> followed by your proposal. For example, to
+            propose occupying the UN headquarters, you would type:</p>
+        <p><span class="command">!propose Occupy the UN headquarters</span></p>
+        <img src="images/propose.png" alt="Propose Command Example">
 
-        <p>The <strong>Proposal</strong> phase starts with an image like this:</p>
-        <img src="images/proposal-phase.png" alt="">
+        <p>To see all proposals, type <span class="command">!proposals</span>. For inspiration, type <span
+                class="command">!advice</span>.</p>
+        <img src="images/advice.png" alt="Advice Command Example">
 
-        <p>During the <strong>Proposal</strong> phase you can type !propose followed by your proposal. For example, if
-            you want to
-            propose that your faction occupy the UN headquarters, you would type:</p>
+        <h2>Voting Phase</h2>
 
-        <p>!propose Occupy the UN headquarters</p>
+        <p>The <strong>Voting</strong> phase begins with an image like this:</p>
+        <img src="images/voting-phase.png" alt="Voting Phase Example">
 
-        <img src="images/propose.png" alt="">
+        <p>During this phase, type <span class="command">!vote</span> to bring up the voting menu.</p>
+        <img src="images/vote.jpg" alt="Vote Command Example">
 
-        <p>You can also type !proposals to see a list of all the proposals that have been made.</p>
+        <p>Voting lasts for 24 hours. After this, the winning proposal is selected and implemented in the game.</p>
 
-        <p>During the Proposals period you can type !advice to ask your faction for inspiration on what to propose</p>
-        <img src="images/advice.png" alt="">
+        <h2>Results</h2>
 
-        <h2>Voting phase</h2>
+        <p>After the voting, the results phase begins with an image like this:</p>
+        <img src="images/results.png" alt="Results Example">
 
-        <p>This phase begins with an image like this:</p>
-        <img src="images/voting-phase.png" alt="">
+        <p>The winning proposal is carried out, and the consequences are integrated into the game story. These changes
+            will affect future events and decisions.</p>
+        <img src="images/proposal-result.png" alt="Proposal Result Example">
 
-        <p>During the <strong>Voting</strong> phase you can type !vote to bring up the voting menu.</p>
+        <h2>Next Cycle</h2>
 
-        <img src="images/vote.jpg" alt="">
-
-        <p>The <strong>Voting</strong> phase lasts for 24 hours, after which the winning proposal is selected.</p>
-
-        <h2>Voting Results</h2>
-        <p>This phase begins with an image like this:</p>
-        <img src="images/results.png" alt="">
-
-        <p>After a few hours, the winning proposal is carried out within the game world and players discover what has
-            happened as a result. The changes that occur will be integrated into the emergent story. Any breakthroughs
-            or obstacles that result from a proposal will effect the game moving forward. The game will announce it like
-            this:</p>
-
-        <img src="images/proposal-result.png" alt="">
-
-        <h2>Next cycle</h2>
-        <p>The game will cycle again according to the schedule. This means that another crisis or opportunity will be
-            announced in a <strong>Dispatch</strong>. Have fun!</p>
-
+        <p>The game then cycles again according to the schedule. Another crisis or opportunity will be announced in the
+            next <strong>Dispatch</strong>. Have fun!</p>
 
     </div>
 

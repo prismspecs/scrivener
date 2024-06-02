@@ -149,7 +149,7 @@ client.on('messageCreate', async (message) => {
                     // generateTextTest(message);
                     break;
                 case '!howto':
-                    const welcomeMessage = "Some helpful commands:\n\n";
+                    const welcomeMessage = "Welcome to Scrivener. In this game, you are co-writing a speculative future with the help of an AI storyteller. As members of the DAO in the near-future, you'll make proposals and decisions that shape a nondeterministic narrative, resisting the forces of illberalism. Write your proposals and see how the story unfolds!\n\nSome helpful commands:\n\n";
                     const commandListString = commandList.join('\n');
                     message.reply({ content: `${welcomeMessage}${commandListString}\n\nGood luck!`, ephemeral: true });
                     break;
@@ -178,7 +178,10 @@ client.on('messageCreate', async (message) => {
                     summary(message);
                     break;
                 case '!dispatch':
-                    showDispatch(message);
+                    const history = loadFromJSON(`${config.dataFolder}/history-of-events.json`);
+                    const dispatch = Object.values(history).pop();
+                    console.log(dispatch);
+                    displayDispatch(dispatch);
                     break;
                 case '!advice':
                     let factionName = message.content.split(' ')[1];
@@ -486,35 +489,6 @@ async function propose(message) {
     client.channels.cache.get(config.CHANNEL_ID).send(df.string());
 }
 
-async function showDispatch(message) {
-    // get the latest dispatch from history-of-events.json using pop (make this shift() if pop returns the wrong one...)
-    const history = loadFromJSON(`${config.dataFolder}/history-of-events.json`);
-    const dispatch = Object.values(history).pop();
-
-    console.log(dispatch);
-
-    const eventImage = new AttachmentBuilder(`${config.dispatchFolder}/${dispatch.image}`).setName("event.jpg");
-
-    const description = "Comrades, something has happened that requires our attention.";
-
-    // create a new embed
-    const embed = new EmbedBuilder()
-        .setColor(0xFF0000)
-        .setTitle('DISPATCH')
-        .setDescription(description)
-        .addFields(
-            { name: "DISPATCH", value: dispatch.text },
-        )
-        .addFields(
-            { name: 'Proposals', value: "Proposals are currently being accepted. Use the !propose command to draft a proposal." },
-        )
-        .setImage("attachment://event.jpg") // set the image using the attachment
-
-    // send the embed to the channel
-    message.channel.send({ embeds: [embed], files: [eventImage] });
-
-}
-
 async function storyUpdate(message) {
     // load story-update.json
     const storyUpdate = loadFromJSON(`${config.dataFolder}/story-update.json`);
@@ -598,17 +572,7 @@ async function generateDispatch() {
 
 }
 
-
-
 function displayDispatch(dispatch) {
-    // console.log(dispatch);
-    // create a new embed
-    // const embed = new EmbedBuilder()
-    //     // set color to #55ff55 if dispatch.type is opportunity, or #ff5555 if dispatch.type is crisis
-    //     .setColor(dispatch.type === 'opportunity' ? 0x55ff55 : 0xff5555)
-    //     .setTitle('DISPATCH')
-    //     .setDescription(dispatch.type);
-    // message.channel.send({ embeds: [embed] });
 
     // color is green for opportunity, red for crisis
     const color = dispatch.type === 'opportunity' ? 0x55ff55 : 0xff5555;
@@ -623,26 +587,30 @@ function displayDispatch(dispatch) {
     // message.channel.send({ files: [dispatchImage] });
     client.channels.cache.get(config.CHANNEL_ID).send({ files: [dispatchImage] });
 
+    client.channels.cache.get(config.CHANNEL_ID).send(config.dispatchHeader);
+    client.channels.cache.get(config.CHANNEL_ID).send(dispatch.text);
+    client.channels.cache.get(config.CHANNEL_ID).send(config.dispatchInstructions);
+
     // unpin previous messages
-    unpinAllMessages(client, config.CHANNEL_ID);
+    // unpinAllMessages(client, config.CHANNEL_ID);
 
     // Create an array to store all promises
-    const promises = [];
+    // const promises = [];
 
-    // Send the messages and push the promises to the array
-    promises.push(client.channels.cache.get(config.CHANNEL_ID).send(config.dispatchHeader));
-    promises.push(client.channels.cache.get(config.CHANNEL_ID).send(dispatch.text));
-    promises.push(client.channels.cache.get(config.CHANNEL_ID).send(config.dispatchInstructions));
+    // // Send the messages and push the promises to the array
+    // promises.push(client.channels.cache.get(config.CHANNEL_ID).send(config.dispatchHeader));
+    // promises.push(client.channels.cache.get(config.CHANNEL_ID).send(dispatch.text));
+    // promises.push(client.channels.cache.get(config.CHANNEL_ID).send(config.dispatchInstructions));
 
-    // Wait for all promises to resolve
-    Promise.all(promises)
-        .then(messages => {
-            // Pin all messages
-            messages.forEach(sentMessage => sentMessage.pin());
-        })
-        .catch(error => {
-            console.error('Error pinning messages:', error);
-        });
+    // // Wait for all promises to resolve
+    // Promise.all(promises)
+    //     .then(messages => {
+    //         // Pin all messages
+    //         messages.forEach(sentMessage => sentMessage.pin());
+    //     })
+    //     .catch(error => {
+    //         console.error('Error pinning messages:', error);
+    //     });
 }
 
 function isPlayerAdmin(discordId) {
@@ -707,9 +675,27 @@ function adminCommand(message) {
             saveToJSON(`${config.dataFolder}/game.json`, game);
             message.reply(`Manual mode set to: ${manualMode}`);
             break;
+        case 'reminder-proposal':
+            remindPropose();
+            break;
         default:
             message.reply('Invalid admin command.');
     }
+}
+
+function remindPropose() {
+
+    const history = loadFromJSON(`${config.dataFolder}/history-of-events.json`);
+    const dispatch = Object.values(history).pop();
+    displayDispatch(dispatch);
+
+    // remind players to propose
+    const embed = quickEmbed('Reminder', 'Submit your proposals now.', 0x5555ff);
+    client.channels.cache.get(config.CHANNEL_ID).send({ embeds: [embed] });
+
+    // send a message to the channel
+    client.channels.cache.get(config.CHANNEL_ID).send('## Comrades, make your proposals for the next 6 hours\n\n@everyone Proposing a plan of action in *Scrivener* involves reading the latest Dispatch and crafting a speculative plan of action. After the proposal round has finished, everyone can determine the course of action through voting. To propose a plan of action simply type !propose [your proposal here].\n\n__Example__\n*!propose My fellow Marxists, we must always focus our efforts on seizing the means of production. To do this, I propose a three point plan of ...*');
+
 }
 
 // function to send an image

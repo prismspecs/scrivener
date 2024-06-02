@@ -51,12 +51,12 @@ function main() {
     const jsonObject = createJSONObject(formattedText);
 
     // Output JSON file path
-    const outputFilePath = 'output.json';
+    const outputFilePath = 'convert-output.json';
 
     // Write JSON object to output file
     fs.writeFileSync(outputFilePath, JSON.stringify(jsonObject, null, 2), 'utf8');
 
-    console.log('Formatted text converted and saved to output.json');
+    console.log('Formatted text converted and saved to convert-output.json');
 }
 
 // Execute the main function
