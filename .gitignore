@@ -8,6 +8,8 @@ data/next-dispatch.json
 audio/
 video/
 *.mp4
+convert.md
+convert-output.md
 
 convert.md
 output.json
