@@ -98,9 +98,6 @@ client.once('ready', () => {
     const channel = guild.channels.cache.get(config.CHANNEL_ID);
     if (!channel) return console.log('Unable to find the channel.');
 
-    // send a message to the channel when the bot comes online
-    //channel.send('Scrivener is now online.');
-
     // task scheduling
     setupSchedule(changeState);
 
@@ -244,7 +241,7 @@ function joinGame(message) {
 
     const joinMessage = `Welcome to ${config.gameName}, ${member.displayName}!\n\n` +
         `You can read more about how to play in the #scrivener-rulebook channel. You have been selected as a member of the ${config.groupName}, the last bastion of the Left in the year ${config.gameYear}. You must work together through debate and cooperation to spend our pooled resources in order to respond to crises and opportunities. At any time you may type !help to get some basic instructions and a list of available actions you may take. You have been given ${config.startingBalance} ${config.currency} as a valued comrade in our quest author a new future beyond the shadow of illiberalism.\n\n` +
-        `Please select a faction to join below. You can read more about them at <#${config.RULEBOOK_ID}> or by typing !factions\n\nChoose your faction:`;
+        `Please select a faction to join below. You can read more about them at <#${config.RULEBOOK_CHANNEL_ID}> or by typing !factions\n\nChoose your faction:`;
 
     // create button for each faction
     const buttons = factions.map((faction) => {
@@ -367,7 +364,11 @@ async function advice(message, factionName) {
 
     // get the latest dispatch from history-of-events.json
     const history = loadFromJSON(`${config.dataFolder}/history-of-events.json`);
-    const latestDispatch = Object.values(history).pop().text;
+
+    // create a string with the text from the last 3 dispatches
+    const lastestDispatches = Object.values(history).slice(-3).map(dispatch => dispatch.text).join('\n\n');
+
+    // const latestDispatch = Object.values(history).pop().text;
 
     //console.log(latestDispatch);
 
@@ -375,9 +376,7 @@ async function advice(message, factionName) {
     if (!message.author.bot) {
         try {
 
-            let response = await promptOllama(latestDispatch, "Limit your response to 1500 characters or fewer: ", "respond as if you were a leader of the " + faction.name + " faction, which believes in " + advice + " but give advice specific to this situation. Be certain to limit your response to 1500 characters or fewer!");
-
-            // console.log(response);
+            let response = await promptOllama(lastestDispatches, "Limit your response to 700 characters or fewer: ", "respond as if you were a leader of the " + faction.name + " faction, which believes in " + advice + " but give advice specific to this situation. Be certain to limit your response to 700 characters or fewer!");
 
             // if the response is longer than 1800 characters, cut it off
             if (response.length > 1800) {
@@ -397,7 +396,6 @@ async function advice(message, factionName) {
             message.reply('An error occurred while processing your request.');
         }
     }
-
 }
 
 async function propose(message) {
@@ -586,7 +584,6 @@ function displayDispatch(dispatch) {
     // send image to channel
     // message.channel.send({ files: [dispatchImage] });
     client.channels.cache.get(config.CHANNEL_ID).send({ files: [dispatchImage] });
-
     client.channels.cache.get(config.CHANNEL_ID).send(config.dispatchHeader);
     client.channels.cache.get(config.CHANNEL_ID).send(dispatch.text);
     client.channels.cache.get(config.CHANNEL_ID).send(config.dispatchInstructions);
@@ -625,9 +622,6 @@ function adminCommand(message) {
     const command = message.content.split(' ')[1];
 
     switch (command) {
-        case 'dispatch':
-            changeState('proposal');
-            break;
         case 'proposal':
             changeState('proposal');
             break;
@@ -641,7 +635,8 @@ function adminCommand(message) {
             storyUpdate(message);
             break;
         case 'sendImage':
-            sendImage(message, image);
+            const imgPath = message.content.split(' ').slice(2).join(' ');
+            sendImage(imgPath);
             break;
         case 'generateDispatch':
             generateDispatch();
@@ -699,9 +694,9 @@ function remindPropose() {
 }
 
 // function to send an image
-function sendImage(message, image) {
+async function sendImage(image) {
     const imageAttachment = new AttachmentBuilder(image).setName('image.jpg');
-    message.channel.send({ files: [imageAttachment] });
+    client.channels.cache.get(config.CHANNEL_ID).send({ files: [imageAttachment] });
 }
 
 async function changeState(newState) {
@@ -741,5 +736,6 @@ async function changeState(newState) {
 
     }
 }
+
 
 client.login(process.env.DISCORD_TOKEN);

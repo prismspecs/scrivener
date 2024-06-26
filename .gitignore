@@ -10,6 +10,7 @@ video/
 *.mp4
 convert.md
 convert-output.md
+weird-economies.code-workspace
 
 convert.md
 output.json

@@ -1,6 +1,17 @@
-## Comrades, make your proposals for the next 6 hours
+**The Forever Marxists proposed a successful project, initiated by <@340686435268952064>. In short, the plan is:**
 
-@everyone Proposing a plan of action in *Scrivener* involves reading the latest Dispatch and crafting a speculative plan of action. After the proposal round has finished, everyone can determine the course of action through voting. To propose a plan of action simply type !propose [your proposal here].
+Relying on our ability to backchannel and apply strategic pressure, we aim to pool resources earmarked to incentivize and reward actions aimed at disrupting pollutant organizations. This involves investment diversification, the creation of a new asset class, and alternative currency initiatives through DAO-backed grey carbon credits. Partnerships with organizations most impacted by global warming and environmental racism will be essential, as they would be interested in funding this. We will focus on educating and engaging cypherpunk and grey hat online communities to mobilize localist networks to either receive grey credits or siphon resources from universities as another source of funding for those credits.
 
-__Example__
-*!propose My fellow Marxists, we must always focus our efforts on seizing the means of production. To do this, I propose a three point plan of ...*
+```Weeks go by as we put the plan into action...```
+## Carbon Credits Grey Market Initiative
+Using our backchanneling skills, we successfully pooled resources to fund eco-sabotage activities. This eco-sabotage rewards system incentivized direct actions against pollutant organizations, causing significant disruptions. Leveraging our connections and subtle pressure tactics, we facilitated the allocation of grey carbon credits, attracting investment and creating a new asset class. Our partnerships with environmental organizations flourished, bringing in crucial funding and expanding our influence.
+
+```While that takes place, there are other developments on the front```
+## Strategic Financial Maneuvers
+The introduction of DAO-backed grey carbon credits diversified our investment portfolio. We imposed fees and leveraged seigniorage to create a sustainable funding model. By collaborating with groups affected by environmental racism, we not only secured financial backing but also strengthened our alliances. Our educational outreach within cypherpunk and grey hat communities galvanized support, leading to the formation of localist networks adept at siphoning resources from universities to further fund our initiatives.
+
+## Strengthened Alliances and Global Solidarity
+Our targeted eco-sabotage rewards system fostered a spirit of global solidarity and direct action. The financial gains from the grey carbon credits allowed us to reinvest in our operations, enhancing our guerrilla finance strategies. As a result, our financial position and alliances were significantly bolstered, enabling us to continue our mission with greater resilience and efficacy.
+
+## Enhanced Operational Capabilities
+The influx of resources and heightened support led to improved logistics and operational capabilities. Our ability to engage in eco-sabotage and other disruptive activities expanded, increasing pressure on pollutant organizations. The strengthened alliances and financial gains ensured our efforts were sustainable and impactful, furthering our goals of disrupting illiberal power structures and advancing environmental justice.

@@ -98,8 +98,8 @@ export async function createVideoWithAudio(audioFilePath, imagesFolderPath, outp
     }
 }
 
-const audioFilePath = 'audio/summary-27-may.mp3';
+const audioFilePath = 'audio/summary-end.mp3';
 const imagesFolderPath = 'images/dispatches';
-const outputFilePath = 'video/summary-27-may.mp4';
+const outputFilePath = 'video/summary-end.mp4';
 
 createVideoWithAudio(audioFilePath, imagesFolderPath, outputFilePath);
